@@ -118,13 +118,23 @@ fixtures_filtered = [f for f in all_fixtures if f["season"] in selected_seasons]
 tables_filtered = {s: all_tables[s] for s in selected_seasons}
 
 # --- MAIN CONTENT ---
-st.title("⚽ Head-to-Head Football Dashboard")
+st.markdown("<h1 style='text-align:center;'>NIUK FC</h1>", unsafe_allow_html=True)
+
 
 # --- H2H ---
-st.header("🤝 Head-to-Head Results")
+st.markdown(
+    "<h2 style='text-align:center; font-size:36px;'>Head-to-Head Results</h2>",
+    unsafe_allow_html=True
+)
 matches, w, d, l = get_h2h(fixtures_filtered, player1, player2)
 
-st.markdown(f"### Overall Record: {player1} vs {player2}")
+st.markdown(f"""
+<div style="display: flex; justify-content: space-between; font-size: 28px; font-weight: bold;">
+    <span>{player1}</span>
+    <span>{player2}</span>
+</div>
+""", unsafe_allow_html=True)
+
 col1, col2, col3 = st.columns(3)
 with col1:
     st.markdown(f"""<div style="background:#008000;padding:20px;border-radius:12px;text-align:center;color:white;font-size:22px;font-weight:bold;">{w}<br>Wins</div>""", unsafe_allow_html=True)
@@ -143,17 +153,20 @@ if matches:
     match_text = "<br>".join(match_lines)
 
     st.markdown(f"""
-        <div style="background-color:#2f3b52;padding:20px;border-radius:12px;
-        color:white;box-shadow:0px 4px 6px rgba(0,0,0,0.2);">
-        <b>Head-to-Head Matches</b><br><br>
-        {match_text}
-        </div>
-    """, unsafe_allow_html=True)
+    <div style="background-color:#2f3b52;padding:20px;border-radius:12px;
+    color:white;box-shadow:0px 4px 6px rgba(0,0,0,0.2); text-align:center;">
+        <b style="font-size:28px;">Head-to-Head Matches</b><br><br>
+        <span style="font-size:20px;">{match_text}</span>
+    </div>
+""", unsafe_allow_html=True)
 else:
     st.info("No head-to-head matches found between these players.")
 
 # --- COMBINED LEAGUE RECORD ---
-st.header("🏆 Combined League Record")
+st.markdown(
+    "<h2 style='text-align:center;'>Combined League Record</h2>",
+    unsafe_allow_html=True
+)
 col1, col2 = st.columns(2)
 
 for col, player in zip([col1, col2], [player1, player2]):
@@ -164,6 +177,7 @@ for col, player in zip([col1, col2], [player1, player2]):
         df["Twitter Handles"] = df["Twitter Handles"].astype(str).str.strip()
         row = df[df["Twitter Handles"] == player]
         if not row.empty:
+            # Sum normal stats
             for k in ["MP", "W", "D", "L", "Points"]:
                 if k in row:
                     try:
@@ -171,15 +185,16 @@ for col, player in zip([col1, col2], [player1, player2]):
                         totals[k] += int(float(val)) if val else 0
                     except:
                         totals[k] += 0
-            # Handle GF/GA together in one column
-            if "+/-" in row:
+            # Sum GF/GA from "+ / -" column
+            if "+ / -" in row:
                 try:
-                    gf_ga = str(row["+/-"].values[0]).strip()  # e.g., "362/120"
+                    gf_ga = str(row["+ / -"].values[0]).strip()  # e.g., "362/120"
                     gf, ga = gf_ga.split("/")
                     totals["GF"] += int(gf)
                     totals["GA"] += int(ga)
                 except:
                     pass
+
     totals["GD"] = totals["GF"] - totals["GA"]
 
     with col:
