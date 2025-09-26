@@ -7,6 +7,30 @@ import re
 # --- CONFIG ---
 st.set_page_config(page_title="H2H Football Dashboard", layout="wide")
 
+# --- CUSTOM CSS FOR CLEAN UI ---
+st.markdown("""
+    <style>
+        .stApp {
+            background-color: #ffffff;
+        }
+        .card {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
+            color: #333333;
+        }
+        .card h3 {
+            margin: 0;
+            font-size: 24px;
+            color: #007bff;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 # --- GOOGLE SHEETS AUTH ---
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
@@ -85,7 +109,6 @@ def load_table(sheet, season):
 
 def get_h2h(fixtures, p1, p2):
     matches, w, d, l = [], 0, 0, 0
-
     for f in fixtures:
         if {f["home"], f["away"]} == {p1, p2}:
             for leg_home, leg_away in [(f["home_leg1"], f["away_leg1"]), (f["home_leg2"], f["away_leg2"])]:
@@ -119,32 +142,34 @@ fixtures_filtered = [f for f in all_fixtures if f["season"] in selected_seasons]
 tables_filtered = {s: all_tables[s] for s in selected_seasons}
 
 # --- MAIN CONTENT ---
-st.markdown("<h1 style='text-align:center;'>NIUK FC</h1>", unsafe_allow_html=True)
-
+st.markdown("<h1 style='text-align:center; color:#000000;'>NIUK FC Tournix</h1>", unsafe_allow_html=True)
 
 # --- H2H ---
-st.markdown(
-    "<h2 style='text-align:center; font-size:36px;'>Head-to-Head Results</h2>",
-    unsafe_allow_html=True
-)
+st.markdown("<h2 style='text-align:center; font-size:36px; color:#000000;'>Head-to-Head Results</h2>", unsafe_allow_html=True)
 matches, w, d, l = get_h2h(fixtures_filtered, player1, player2)
 
+# Player names left & right
 st.markdown(f"""
-<div style="display: flex; justify-content: space-between; font-size: 28px; font-weight: bold;">
-    <span>{player1}</span>
-    <span>{player2}</span>
+<div style="display: flex; justify-content: space-between; width: 100%; font-size: 28px; font-weight: bold;">
+    <div style="flex:1; text-align:left; color:#000000;">{player1}</div>
+    <div style="flex:1; text-align:right; color:#000000;">{player2}</div>
 </div>
 """, unsafe_allow_html=True)
 
+
+# W/D/L cards
 col1, col2, col3 = st.columns(3)
 with col1:
-    st.markdown(f"""<div style="background:#008000;padding:20px;border-radius:12px;text-align:center;color:white;font-size:22px;font-weight:bold;">{w}<br>Wins</div>""", unsafe_allow_html=True)
+    st.markdown(f"""<div class="card" style="background:#e8f5e9;color:#1b5e20;">
+        <h3>{w}</h3>Wins</div>""", unsafe_allow_html=True)
 with col2:
-    st.markdown(f"""<div style="background:#808080;padding:20px;border-radius:12px;text-align:center;color:black;font-size:22px;font-weight:bold;">{d}<br>Draws</div>""", unsafe_allow_html=True)
+    st.markdown(f"""<div class="card" style="background:#eeeeee;color:#424242;">
+        <h3>{d}</h3>Draws</div>""", unsafe_allow_html=True)
 with col3:
-    st.markdown(f"""<div style="background:#F72A00;padding:20px;border-radius:12px;text-align:center;color:white;font-size:22px;font-weight:bold;">{l}<br>Losses</div>""", unsafe_allow_html=True)
+    st.markdown(f"""<div class="card" style="background:#ffebee;color:#b71c1c;">
+        <h3>{l}</h3>Losses</div>""", unsafe_allow_html=True)
 
-# H2H Matches tile
+# H2H Matches
 if matches:
     match_lines = []
     for season, rnd, home, away, hs, as_ in matches:
@@ -154,20 +179,17 @@ if matches:
     match_text = "<br>".join(match_lines)
 
     st.markdown(f"""
-    <div style="background-color:#2f3b52;padding:20px;border-radius:12px;
-    color:white;box-shadow:0px 4px 6px rgba(0,0,0,0.2); text-align:center;">
-        <b style="font-size:28px;">Head-to-Head Matches</b><br><br>
-        <span style="font-size:20px;">{match_text}</span>
+    <div class="card" style="background:#f1f5f9; text-align:center;">
+        <b style="font-size:24px; color:#00000;">Head-to-Head Matches</b><br><br>
+        <span style="font-size:18px; color:#00000;">{match_text}</span>
     </div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 else:
     st.info("No head-to-head matches found between these players.")
 
+
 # --- COMBINED LEAGUE RECORD ---
-st.markdown(
-    "<h2 style='text-align:center;'>Combined League Record</h2>",
-    unsafe_allow_html=True
-)
+st.markdown("<h2 style='text-align:center; color:#000000;'>Combined League Record</h2>", unsafe_allow_html=True)
 col1, col2 = st.columns(2)
 
 for col, player in zip([col1, col2], [player1, player2]):
@@ -175,10 +197,11 @@ for col, player in zip([col1, col2], [player1, player2]):
     for season, df in tables_filtered.items():
         if df.empty or "Twitter Handles" not in df.columns:
             continue
+        df.columns = [str(c).strip() for c in df.columns]
         df["Twitter Handles"] = df["Twitter Handles"].astype(str).str.strip()
         row = df[df["Twitter Handles"] == player]
         if not row.empty:
-            # Sum normal stats
+            # Standard stats
             for k in ["MP", "W", "D", "L", "Points"]:
                 if k in row:
                     try:
@@ -186,26 +209,30 @@ for col, player in zip([col1, col2], [player1, player2]):
                         totals[k] += int(float(val)) if val else 0
                     except:
                         totals[k] += 0
-            # Sum GF/GA from "+ / -" column
-            if "+ / -" in row:
+            # Handle GF/GA
+            if "GF" in row.columns and "GA" in row.columns:
                 try:
-                    gf_ga = str(row["+ / -"].values[0]).strip()  # e.g., "362/120"
-                    gf, ga = gf_ga.split("/")
-                    totals["GF"] += int(gf)
-                    totals["GA"] += int(ga)
+                    totals["GF"] += int(str(row["GF"].values[0]).replace(",", "").strip())
+                    totals["GA"] += int(str(row["GA"].values[0]).replace(",", "").strip())
                 except:
                     pass
-
+            elif "+ / -" in row.columns:
+                try:
+                    gf_ga = str(row["+ / -"].values[0]).strip()
+                    gf, ga = gf_ga.split("/")
+                    totals["GF"] += int(gf.strip())
+                    totals["GA"] += int(ga.strip())
+                except:
+                    pass
     totals["GD"] = totals["GF"] - totals["GA"]
 
     with col:
         st.markdown(f"""
-            <div style="background-color:#000000;padding:20px;border-radius:12px;
-            text-align:center;font-size:18px;font-weight:bold;box-shadow:0px 4px 6px rgba(0,0,0,0.1);">
-            <span style="font-size:20px;color:#007bff;">{player}</span><br><br>
-            Matches: {totals['MP']}<br>
-            Wins: {totals['W']} | Draws: {totals['D']} | Losses: {totals['L']}<br>
-            GF: {totals['GF']} | GA: {totals['GA']} | GD: {totals['GD']}<br>
-            Points: {totals['Points']}
+            <div class="card">
+                <h3>{player}</h3>
+                Matches: {totals['MP']}<br>
+                Wins: {totals['W']} | Draws: {totals['D']} | Losses: {totals['L']}<br>
+                GF: {totals['GF']} | GA: {totals['GA']} | GD: {totals['GD']}<br>
+                Points: {totals['Points']}
             </div>
         """, unsafe_allow_html=True)
