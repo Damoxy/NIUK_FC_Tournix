@@ -14,6 +14,7 @@ client = gspread.authorize(creds)
 
 # --- SEASON URLS ---
 season_urls = {
+    "S1": "https://docs.google.com/spreadsheets/d/1XQ9g5iZVmfOKmnvLWXkyuV9bFtwY3ZIvDhdDMxp5XTk/edit?gid=956052616",
     "S2": "https://docs.google.com/spreadsheets/d/15HwiiqVEWI7M41xE3HGeqbGPtihagoC3ERuRSEwsVVM/edit?gid=956052616",
     "S3": "https://docs.google.com/spreadsheets/d/1UUaWuyXoAkji_72CEpylPSU39w3Fnwsw1uKYRe9sJcQ/edit?gid=956052616",
     "S4": "https://docs.google.com/spreadsheets/d/1-ulIZ5eNjaxR0-m69xLb8XRmHJu-L2bUB9bLUz9iOP8/edit?gid=956052616",
