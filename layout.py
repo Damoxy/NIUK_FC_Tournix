@@ -1,7 +1,7 @@
 import streamlit as st
 
 def set_page_config():
-    st.set_page_config(page_title="H2H Football Dashboard", layout="wide")
+    st.set_page_config(page_title="NIUK FC League", layout="wide")
 
 def inject_css():
     st.markdown("""
