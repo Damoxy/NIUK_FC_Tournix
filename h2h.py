@@ -43,7 +43,25 @@ def render_h2h(fixtures_filtered, player1, player2):
         for season, rnd, home, away, hs, as_ in matches:
             hs_text = str(hs) if hs is not None else "-"
             as_text = str(as_) if as_ is not None else "-"
-            match_lines.append(f"{rnd} - {season}: {home} {hs_text}-{as_text} {away}")
+
+            # Default draw style
+            score_style = "color:#424242;"  
+            home_name, away_name = home, away
+
+            if hs is not None and as_ is not None:
+                if hs > as_:
+                    score_style = "color:#1b5e20;"  # green
+                    home_name = f"<b>{home}</b>"
+                elif hs < as_:
+                    score_style = "color:#1b5e20;"  # green
+                    away_name = f"<b>{away}</b>"
+                else:
+                    score_style = "color:#424242;"  # gray
+
+            match_lines.append(
+                f"{rnd} - {season}: {home_name} "
+                f"<span style='{score_style}'>{hs_text}-{as_text}</span> {away_name}"
+            )
 
         match_text = "<br>".join(match_lines)
 
