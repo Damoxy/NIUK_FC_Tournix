@@ -23,7 +23,7 @@ for season, url in SEASON_URLS.items():
 players = sorted(set(f["home"] for f in all_fixtures) | set(f["away"] for f in all_fixtures))
 
 # --- SIDEBAR ---
-st.sidebar.title("⚙️ Settings")
+st.sidebar.title("⚙️")
 max_seasons = len(SEASON_URLS)
 season_limit = st.sidebar.slider("Include last N seasons", 1, max_seasons, max_seasons)
 player1 = st.sidebar.selectbox("Select Player 1", players, index=0)
