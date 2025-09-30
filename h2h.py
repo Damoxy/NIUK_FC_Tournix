@@ -36,11 +36,21 @@ def render_h2h(fixtures_filtered, player1, player2):
         """, unsafe_allow_html=True)
 
     with col2:
-        st.markdown(f"""<div class="card" style="background:#eeeeee;color:#424242;">
-            <h3>{d}</h3>Draws</div>""", unsafe_allow_html=True)
+        st.markdown(f"""
+            <div class="card" style="background:#eeeeee;color:#424242;text-align:center;padding:10px;border-radius:10px;">
+                <h1 style="font-size:48px;margin:0;">{d}</h1>
+                <p style="font-size:22px;margin:0;">Draws</p>
+            </div>
+        """, unsafe_allow_html=True)
+    
     with col3:
-        st.markdown(f"""<div class="card" style="background:#ffebee;color:#b71c1c;">
-            <h3>{l1}</h3>Losses</div>""", unsafe_allow_html=True)
+        st.markdown(f"""
+            <div class="card" style="background:#ffebee;color:#b71c1c;text-align:center;padding:10px;border-radius:10px;">
+                <h1 style="font-size:48px;margin:0;">{l1}</h1>
+                <p style="font-size:22px;margin:0;">Losses</p>
+            </div>
+        """, unsafe_allow_html=True)
+
 
     # --- Match history ---
     if matches:
