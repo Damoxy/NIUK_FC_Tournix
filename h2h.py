@@ -28,8 +28,13 @@ def render_h2h(fixtures_filtered, player1, player2):
     # --- W/D/L cards (always from left player's perspective) ---
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.markdown(f"""<div class="card" style="background:#e8f5e9;color:#1b5e20;">
-            <h3>{w1}</h3>Wins</div>""", unsafe_allow_html=True)
+        st.markdown(f"""
+            <div class="card" style="background:#e8f5e9;color:#1b5e20;text-align:center;padding:10px;border-radius:10px;">
+                <h1 style="font-size:48px;margin:0;">{w1}</h1>
+                <p style="font-size:22px;margin:0;">Wins</p>
+            </div>
+        """, unsafe_allow_html=True)
+
     with col2:
         st.markdown(f"""<div class="card" style="background:#eeeeee;color:#424242;">
             <h3>{d}</h3>Draws</div>""", unsafe_allow_html=True)
