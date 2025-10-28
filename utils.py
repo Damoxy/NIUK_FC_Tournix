@@ -7,38 +7,49 @@ def clean_round_name(text):
     match = re.search(r"(ROUND\s*\d+)", text.upper())
     return match.group(1).title() if match else text
 
-def load_fixtures(sheet, season):
-    ws = sheet.worksheet("Fixtures")
-    data = ws.get_all_values()
-    fixtures = []
-    current_round = None
+def load_fixtures(sheet, season, divisions=["Div1_Fixtures", "Div2_Fixtures"]):
+    all_fixtures = []
 
-    for row in data:
-        if any("ROUND" in str(cell).upper() for cell in row if cell):
-            current_round = clean_round_name(" ".join([c for c in row if c]).strip())
-            continue
-        if len(row) >= 9 and row[2] and row[3]:
-            home, away = row[2].strip(), row[3].strip()
-            try:
-                home_leg1, away_leg1 = int(row[4]), int(row[5])
-            except:
-                home_leg1, away_leg1 = None, None
-            try:
-                home_leg2, away_leg2 = int(row[7]), int(row[8])
-            except:
-                home_leg2, away_leg2 = None, None
+    for division in divisions:
+        try:
+            ws = sheet.worksheet(division)
+        except:
+            continue  # Skip if the worksheet doesn't exist
 
-            fixtures.append({
-                "season": season,
-                "round": current_round,
-                "home": home,
-                "away": away,
-                "home_leg1": home_leg1,
-                "away_leg1": away_leg1,
-                "home_leg2": home_leg2,
-                "away_leg2": away_leg2,
-            })
-    return fixtures
+        data = ws.get_all_values()
+        current_round = None
+
+        for row in data:
+            # Detect round row
+            if any("ROUND" in str(cell).upper() for cell in row if cell):
+                current_round = clean_round_name(" ".join([c for c in row if c]).strip())
+                continue
+
+            # Parse fixture row
+            if len(row) >= 9 and row[2] and row[3]:
+                home, away = row[2].strip(), row[3].strip()
+                try:
+                    home_leg1, away_leg1 = int(row[4]), int(row[5])
+                except:
+                    home_leg1, away_leg1 = None, None
+                try:
+                    home_leg2, away_leg2 = int(row[7]), int(row[8])
+                except:
+                    home_leg2, away_leg2 = None, None
+
+                all_fixtures.append({
+                    "season": season,
+                    "division": division,
+                    "round": current_round,
+                    "home": home,
+                    "away": away,
+                    "home_leg1": home_leg1,
+                    "away_leg1": away_leg1,
+                    "home_leg2": home_leg2,
+                    "away_leg2": away_leg2,
+                })
+
+    return all_fixtures
 
 def load_table(sheet, season):
     try:
