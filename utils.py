@@ -1,5 +1,6 @@
 import re
 import pandas as pd
+import streamlit as st
 
 def clean_round_name(text):
     if not text:
@@ -98,6 +99,83 @@ def load_fixtures(sheet, season, divisions=["Div1_Fixtures", "Div2_Fixtures"], c
 
     return all_fixtures
 
+@st.cache_data(show_spinner=False)
+def load_fixtures_by_url(sheet_url, season, divisions=["Div1_Fixtures", "Div2_Fixtures"], cup_sheet="Cup_Fixtures"):
+    import gspread
+    import time
+    gc = gspread.oauth() if hasattr(gspread, 'oauth') else gspread.service_account()
+    sheet = gc.open_by_url(sheet_url)
+    all_fixtures = []
+    def safe_get_worksheet(name):
+        try:
+            ws = sheet.worksheet(name)
+            time.sleep(5)
+            return ws
+        except Exception as e:
+            print(f"Could not load worksheet '{name}': {e}")
+            return None
+    for division in divisions:
+        ws = safe_get_worksheet(division)
+        if not ws:
+            continue
+        data = ws.get_all_values()
+        current_round = None
+        for row in data:
+            if any("ROUND" in str(cell).upper() for cell in row if cell):
+                current_round = clean_round_name(" ".join([c for c in row if c]).strip())
+                continue
+            if len(row) >= 9 and row[2] and row[3]:
+                home, away = row[2].strip(), row[3].strip()
+                try:
+                    home_leg1, away_leg1 = int(row[4]), int(row[5])
+                except:
+                    home_leg1, away_leg1 = None, None
+                try:
+                    home_leg2, away_leg2 = int(row[7]), int(row[8])
+                except:
+                    home_leg2, away_leg2 = None, None
+                all_fixtures.append({
+                    "season": season,
+                    "division": division,
+                    "round": current_round,
+                    "home": home,
+                    "away": away,
+                    "home_leg1": home_leg1,
+                    "away_leg1": away_leg1,
+                    "home_leg2": home_leg2,
+                    "away_leg2": away_leg2,
+                })
+    ws = safe_get_worksheet(cup_sheet)
+    if ws:
+        data = ws.get_all_values()
+        current_round = None
+        for row in data:
+            if len([c for c in row if c]) == 1 and not row[2:4]:
+                current_round = " ".join([c for c in row if c]).strip()
+                continue
+            if len(row) >= 9 and row[2] and row[3]:
+                home, away = row[2].strip(), row[3].strip()
+                try:
+                    home_leg1, away_leg1 = int(row[4]), int(row[5])
+                except:
+                    home_leg1, away_leg1 = None, None
+                try:
+                    home_leg2, away_leg2 = int(row[7]), int(row[8])
+                except:
+                    home_leg2, away_leg2 = None, None
+                all_fixtures.append({
+                    "season": season,
+                    "division": "Cup",
+                    "round": current_round,
+                    "home": home,
+                    "away": away,
+                    "home_leg1": home_leg1,
+                    "away_leg1": away_leg1,
+                    "home_leg2": home_leg2,
+                    "away_leg2": away_leg2,
+                })
+    return all_fixtures
+
 def load_table(sheet, season):
     try:
         ws = sheet.worksheet(f"LEAGUE DASHBOARD-{season}")
@@ -115,6 +193,29 @@ def load_table(sheet, season):
     if header_row is None:
         return pd.DataFrame()
 
+    df.columns = [str(c).strip() for c in df.iloc[header_row]]
+    df = df[header_row + 1:]
+    df = df.loc[:, ~df.columns.duplicated()]
+    return df.reset_index(drop=True)
+
+@st.cache_data(show_spinner=False)
+def load_table_by_url(sheet_url, season):
+    import gspread
+    gc = gspread.oauth() if hasattr(gspread, 'oauth') else gspread.service_account()
+    sheet = gc.open_by_url(sheet_url)
+    try:
+        ws = sheet.worksheet(f"LEAGUE DASHBOARD-{season}")
+    except:
+        return pd.DataFrame()
+    data = ws.get_all_values()
+    df = pd.DataFrame(data)
+    header_row = None
+    for i, row in df.iterrows():
+        if "Twitter Handles" in row.values:
+            header_row = i
+            break
+    if header_row is None:
+        return pd.DataFrame()
     df.columns = [str(c).strip() for c in df.iloc[header_row]]
     df = df[header_row + 1:]
     df = df.loc[:, ~df.columns.duplicated()]
