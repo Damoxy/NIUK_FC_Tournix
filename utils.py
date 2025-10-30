@@ -7,24 +7,40 @@ def clean_round_name(text):
     match = re.search(r"(ROUND\s*\d+)", text.upper())
     return match.group(1).title() if match else text
 
-def load_fixtures(sheet, season, divisions=["Div1_Fixtures", "Div2_Fixtures"]):
+def display_division_name(division):
+    mapping = {
+        "Div1_Fixtures": "Division 1",
+        "Div2_Fixtures": "Division 2",
+        "Cup": "CUP"
+    }
+    return mapping.get(division, division)
+
+def load_fixtures(sheet, season, divisions=["Div1_Fixtures", "Div2_Fixtures"], cup_sheet="Cup_Fixtures"):
+    import time
     all_fixtures = []
 
-    for division in divisions:
+    # Helper to safely get worksheet with delay
+    def safe_get_worksheet(name):
         try:
-            ws = sheet.worksheet(division)
-        except:
-            continue  # Skip if the worksheet doesn't exist
+            ws = sheet.worksheet(name)
+            time.sleep(5)  # Increased delay to 5 seconds to further reduce API 429 errors
+            return ws
+        except Exception as e:
+            print(f"Could not load worksheet '{name}': {e}")
+            return None
 
+    # Division Fixtures
+    for division in divisions:
+        ws = safe_get_worksheet(division)
+        if not ws:
+            continue
         data = ws.get_all_values()
         current_round = None
-
         for row in data:
             # Detect round row
             if any("ROUND" in str(cell).upper() for cell in row if cell):
                 current_round = clean_round_name(" ".join([c for c in row if c]).strip())
                 continue
-
             # Parse fixture row
             if len(row) >= 9 and row[2] and row[3]:
                 home, away = row[2].strip(), row[3].strip()
@@ -36,10 +52,41 @@ def load_fixtures(sheet, season, divisions=["Div1_Fixtures", "Div2_Fixtures"]):
                     home_leg2, away_leg2 = int(row[7]), int(row[8])
                 except:
                     home_leg2, away_leg2 = None, None
-
                 all_fixtures.append({
                     "season": season,
                     "division": division,
+                    "round": current_round,
+                    "home": home,
+                    "away": away,
+                    "home_leg1": home_leg1,
+                    "away_leg1": away_leg1,
+                    "home_leg2": home_leg2,
+                    "away_leg2": away_leg2,
+                })
+
+    # Cup Fixtures
+    ws = safe_get_worksheet(cup_sheet)
+    if ws:
+        data = ws.get_all_values()
+        current_round = None
+        for row in data:
+            # Detect Cup round header (e.g., "Playoffs", "R of 32", etc.)
+            if len([c for c in row if c]) == 1 and not row[2:4]:
+                current_round = " ".join([c for c in row if c]).strip()
+                continue
+            if len(row) >= 9 and row[2] and row[3]:
+                home, away = row[2].strip(), row[3].strip()
+                try:
+                    home_leg1, away_leg1 = int(row[4]), int(row[5])
+                except:
+                    home_leg1, away_leg1 = None, None
+                try:
+                    home_leg2, away_leg2 = int(row[7]), int(row[8])
+                except:
+                    home_leg2, away_leg2 = None, None
+                all_fixtures.append({
+                    "season": season,
+                    "division": "Cup",
                     "round": current_round,
                     "home": home,
                     "away": away,
