@@ -1,5 +1,5 @@
 import streamlit as st
-from utils import get_h2h
+from utils import get_h2h, display_division_name
 
 
 def render_h2h(fixtures_filtered, player1, player2):
@@ -73,8 +73,26 @@ def render_h2h(fixtures_filtered, player1, player2):
                 else:
                     score_style = "color:#424242;"  # gray
 
+            # Compose match label
+            division_label = display_division_name('Cup') if (rnd and 'Cup' in str(rnd)) or (home and away and home != away and home in ['Cup', 'CUP']) else None
+            # Use division from fixtures if available
+            division_label = None
+            if hasattr(fixtures_filtered[0], 'division') or (isinstance(fixtures_filtered[0], dict) and 'division' in fixtures_filtered[0]):
+                for f in fixtures_filtered:
+                    if f['season'] == season and f['home'] == home and f['away'] == away and (f['home_leg1'] == hs or f['home_leg2'] == hs):
+                        division_label = display_division_name(f['division'])
+                        break
+            if not division_label:
+                division_label = ''
+            # Compose round/label
+            if rnd:
+                match_label = f"{season} {division_label} {rnd} :"
+            else:
+                match_label = f"{season} {division_label} :"
+            match_label = match_label.replace('  ', ' ').strip()
+
             match_lines.append(
-                f"{rnd} - {season}: {home_name} "
+                f"{match_label} {home_name} "
                 f"<span style='{score_style}'>{hs_text}-{as_text}</span> {away_name}"
             )
 
