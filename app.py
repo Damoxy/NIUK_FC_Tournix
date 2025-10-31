@@ -1,7 +1,6 @@
 import streamlit as st
-from auth import init_client
 from config import get_app_title, get_season_urls
-from utils import load_fixtures, load_table
+from utils import load_fixtures_by_url, load_table_by_url
 from layout import set_page_config, inject_css, show_header, render_combined_league_record
 from h2h import render_h2h
 # from fun_messages import get_random_loading_message
@@ -14,13 +13,11 @@ APP_TITLE = get_app_title()
 SEASON_URLS = get_season_urls()
 
 # --- DATA ---
-client = init_client()
 all_fixtures, all_tables = [], {}
 with st.spinner("Loading data..."):
     for season, url in SEASON_URLS.items():
-        sheet = client.open_by_url(url)
-        all_fixtures.extend(load_fixtures(sheet, season))
-        all_tables[season] = load_table(sheet, season)
+        all_fixtures.extend(load_fixtures_by_url(url, season))
+        all_tables[season] = load_table_by_url(url, season)
 
 players = sorted(set(f["home"] for f in all_fixtures) | set(f["away"] for f in all_fixtures))
 

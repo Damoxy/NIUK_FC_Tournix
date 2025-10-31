@@ -1,6 +1,11 @@
 import re
 import pandas as pd
 import streamlit as st
+import os
+import pickle
+import time
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 
 # Example usage in your app:
 # from fun_messages import get_random_loading_message
@@ -104,11 +109,27 @@ def load_fixtures(sheet, season, divisions=["Div1_Fixtures", "Div2_Fixtures"], c
 
     return all_fixtures
 
+def get_gspread_client():
+    creds_dict = dict(st.secrets["gcp_service_account"])
+    creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(
+        creds_dict,
+        ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    )
+    return gspread.authorize(creds)
+
+CACHE_DIR = "cache"
+os.makedirs(CACHE_DIR, exist_ok=True)
+
 @st.cache_data(show_spinner=False)
 def load_fixtures_by_url(sheet_url, season, divisions=["Div1_Fixtures", "Div2_Fixtures"], cup_sheet="Cup_Fixtures"):
-    import gspread
-    import time
-    gc = gspread.oauth() if hasattr(gspread, 'oauth') else gspread.service_account()
+    cache_file = os.path.join(CACHE_DIR, f"fixtures_cache_{season}.pkl")
+    cache_age = 24 * 3600  # 1 day
+    if os.path.exists(cache_file):
+        if time.time() - os.path.getmtime(cache_file) < cache_age:
+            with open(cache_file, "rb") as f:
+                return pickle.load(f)
+    gc = get_gspread_client()
     sheet = gc.open_by_url(sheet_url)
     all_fixtures = []
     def safe_get_worksheet(name):
@@ -179,7 +200,38 @@ def load_fixtures_by_url(sheet_url, season, divisions=["Div1_Fixtures", "Div2_Fi
                     "home_leg2": home_leg2,
                     "away_leg2": away_leg2,
                 })
+    with open(cache_file, "wb") as f:
+        pickle.dump(all_fixtures, f)
     return all_fixtures
+
+@st.cache_data(show_spinner=False)
+def load_table_by_url(sheet_url, season):
+    cache_file = os.path.join(CACHE_DIR, f"table_cache_{season}.csv")
+    cache_age = 24 * 3600  # 1 day
+    if os.path.exists(cache_file):
+        if time.time() - os.path.getmtime(cache_file) < cache_age:
+            return pd.read_csv(cache_file)
+    gc = get_gspread_client()
+    sheet = gc.open_by_url(sheet_url)
+    try:
+        ws = sheet.worksheet(f"LEAGUE DASHBOARD-{season}")
+    except:
+        return pd.DataFrame()
+    data = ws.get_all_values()
+    df = pd.DataFrame(data)
+    header_row = None
+    for i, row in df.iterrows():
+        if "Twitter Handles" in row.values:
+            header_row = i
+            break
+    if header_row is None:
+        return pd.DataFrame()
+    df.columns = [str(c).strip() for c in df.iloc[header_row]]
+    df = df[header_row + 1:]
+    df = df.loc[:, ~df.columns.duplicated()]
+    df = df.reset_index(drop=True)
+    df.to_csv(cache_file, index=False)
+    return df
 
 def load_table(sheet, season):
     try:
@@ -198,29 +250,6 @@ def load_table(sheet, season):
     if header_row is None:
         return pd.DataFrame()
 
-    df.columns = [str(c).strip() for c in df.iloc[header_row]]
-    df = df[header_row + 1:]
-    df = df.loc[:, ~df.columns.duplicated()]
-    return df.reset_index(drop=True)
-
-@st.cache_data(show_spinner=False)
-def load_table_by_url(sheet_url, season):
-    import gspread
-    gc = gspread.oauth() if hasattr(gspread, 'oauth') else gspread.service_account()
-    sheet = gc.open_by_url(sheet_url)
-    try:
-        ws = sheet.worksheet(f"LEAGUE DASHBOARD-{season}")
-    except:
-        return pd.DataFrame()
-    data = ws.get_all_values()
-    df = pd.DataFrame(data)
-    header_row = None
-    for i, row in df.iterrows():
-        if "Twitter Handles" in row.values:
-            header_row = i
-            break
-    if header_row is None:
-        return pd.DataFrame()
     df.columns = [str(c).strip() for c in df.iloc[header_row]]
     df = df[header_row + 1:]
     df = df.loc[:, ~df.columns.duplicated()]
