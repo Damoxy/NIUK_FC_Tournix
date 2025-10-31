@@ -2,6 +2,11 @@ import re
 import pandas as pd
 import streamlit as st
 
+# Example usage in your app:
+# from fun_messages import get_random_loading_message
+# with st.spinner(get_random_loading_message()):
+#     data = load_fixtures_by_url(...)
+
 def clean_round_name(text):
     if not text:
         return ""
@@ -24,7 +29,7 @@ def load_fixtures(sheet, season, divisions=["Div1_Fixtures", "Div2_Fixtures"], c
     def safe_get_worksheet(name):
         try:
             ws = sheet.worksheet(name)
-            time.sleep(5)  # Increased delay to 5 seconds to further reduce API 429 errors
+            time.sleep(1)  
             return ws
         except Exception as e:
             print(f"Could not load worksheet '{name}': {e}")
