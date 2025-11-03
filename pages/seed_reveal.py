@@ -8,46 +8,15 @@ from datetime import datetime
 from utils.layout import inject_css
 inject_css()
 
-# Custom clickable navigation
-st.sidebar.markdown("""
+# Override main app background for this page
+st.markdown("""
     <style>
-        /* Override main app background for this page */
         .stApp {
             background-color: #000000 !important;
             color: #ffffff;
         }
-        
-        .nav-link {
-            display: block;
-            padding: 12px 16px;
-            margin: 8px 0;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            text-decoration: none !important;
-            color: #bdc3c7;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.3s ease;
-        }
-        .nav-link:hover {
-            background: rgba(52, 152, 219, 0.2);
-            color: #3498db;
-            transform: translateX(5px);
-            text-decoration: none !important;
-        }
-        .nav-link.active {
-            background: rgba(52, 152, 219, 0.3);
-            color: #3498db;
-            border-left: 4px solid #3498db;
-            text-decoration: none !important;
-        }
     </style>
 """, unsafe_allow_html=True)
-
-# Current page indicator - Seed Reveal is active
-st.sidebar.markdown('<a href="/" class="nav-link">H2H</a>', unsafe_allow_html=True)
-st.sidebar.markdown('<a href="/seed_reveal" class="nav-link active">Seed Reveal</a>', unsafe_allow_html=True)
 
 # --- 1. Player and Code Setup ---
 if "shuffled_seeds" not in st.session_state:
