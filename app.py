@@ -1,8 +1,8 @@
 import streamlit as st
-from config import get_app_title, get_season_urls
-from utils import load_fixtures_by_url, load_table_by_url
-from layout import set_page_config, inject_css, show_header, render_combined_league_record
-from h2h import render_h2h
+from utils.config import get_app_title, get_season_urls
+from utils.data_utils import load_fixtures_by_url, load_table_by_url
+from utils.layout import set_page_config, inject_css, show_header, render_combined_league_record
+from utils.h2h import render_h2h
 # from fun_messages import get_random_loading_message
 
 # --- CONFIG ---
