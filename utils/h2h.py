@@ -1,5 +1,5 @@
 import streamlit as st
-from utils import get_h2h, display_division_name
+from utils.data_utils import get_h2h, display_division_name
 
 
 def render_h2h(fixtures_filtered, player1, player2):
