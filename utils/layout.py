@@ -18,18 +18,13 @@ def inject_css():
                 color: #333333;
             }
             .card h3 { margin: 0; font-size: 24px; color: #007bff; }
-            
             /* Custom sidebar navigation styling */
             .stSidebar .css-1d391kg {
                 background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
             }
-            
-            /* Style navigation links */
             .stSidebar .stSelectbox label {
                 display: none !important;
             }
-            
-            /* Custom page navigation styling */
             .css-1cypcdb.eczjsme11 {
                 background: rgba(255, 255, 255, 0.1);
                 backdrop-filter: blur(10px);
@@ -37,32 +32,22 @@ def inject_css():
                 margin: 1rem 0;
                 border: 1px solid rgba(255, 255, 255, 0.2);
             }
-            
-            /* Hide default navigation visually but keep functionality */
             .stSidebar [data-testid="stSidebarNav"] {
-                position: absolute;
-                opacity: 0;
-                pointer-events: none;
-                height: 0;
-                overflow: hidden;
+                background: transparent;
+                padding: 1rem 0;
             }
-            
             .stSidebar {
                 background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
                 padding: 0;
             }
-            
-            /* Custom navigation styling */
             .stSidebar [data-testid="stSidebarNav"] ul {
                 padding: 1rem 0;
             }
-            
             .stSidebar [data-testid="stSidebarNav"] li {
                 margin: 0.5rem 0;
             }
-            
             .stSidebar [data-testid="stSidebarNav"] a {
-                color: #bdc3c7;
+                color: #ffffff !important;
                 background: rgba(255, 255, 255, 0.05);
                 padding: 12px 16px;
                 border-radius: 8px;
@@ -74,53 +59,16 @@ def inject_css():
                 text-transform: uppercase;
                 letter-spacing: 1px;
             }
-            
             .stSidebar [data-testid="stSidebarNav"] a:hover {
                 background: rgba(52, 152, 219, 0.2);
-                color: #3498db;
+                color: #ffffff !important;
                 transform: translateX(5px);
             }
-            
             .stSidebar [data-testid="stSidebarNav"] a[aria-current="page"] {
                 background: rgba(52, 152, 219, 0.3);
-                color: #3498db;
+                color: #ffffff !important;
                 border-left: 4px solid #3498db;
             }
-            
-            /* Replace navigation text with CSS */
-            .stSidebar [data-testid="stSidebarNav"] a[href="/"] span {
-                visibility: hidden;
-                position: relative;
-            }
-            
-            .stSidebar [data-testid="stSidebarNav"] a[href="/"] span::after {
-                visibility: visible;
-                position: absolute;
-                top: 0;
-                left: 0;
-                content: "H2H";
-                font-weight: 700;
-                text-transform: uppercase;
-                letter-spacing: 2px;
-            }
-            
-            .stSidebar [data-testid="stSidebarNav"] a[href="/seed_reveal"] span {
-                visibility: hidden;
-                position: relative;
-            }
-            
-            .stSidebar [data-testid="stSidebarNav"] a[href="/seed_reveal"] span::after {
-                visibility: visible;
-                position: absolute;
-                top: 0;
-                left: 0;
-                content: "Seed Reveal";
-                font-weight: 700;
-                text-transform: uppercase;
-                letter-spacing: 1px;
-            }
-            
-            /* Style active and hover states */
             .css-1cypcdb.eczjsme11 a {
                 color: #bdc3c7 !important;
                 text-decoration: none !important;
@@ -130,99 +78,17 @@ def inject_css():
                 margin: 4px 0 !important;
                 display: block !important;
             }
-            
             .css-1cypcdb.eczjsme11 a:hover {
                 background: rgba(52, 152, 219, 0.2) !important;
                 color: #3498db !important;
                 transform: translateX(5px) !important;
             }
-            
             .css-1cypcdb.eczjsme11 a.active {
                 background: rgba(52, 152, 219, 0.3) !important;
                 color: #3498db !important;
                 border-left: 4px solid #3498db !important;
             }
         </style>
-        <script>
-            // More aggressive navigation customization
-            function customizeNavigation() {
-                // Try multiple selectors to find navigation links
-                const selectors = [
-                    '[data-testid="stSidebarNav"] a',
-                    '.css-1cypcdb a',
-                    '.stSidebar a',
-                    'nav a',
-                    '.sidebar a'
-                ];
-                
-                let navLinks = [];
-                for (let selector of selectors) {
-                    const links = document.querySelectorAll(selector);
-                    if (links.length > 0) {
-                        navLinks = Array.from(links);
-                        break;
-                    }
-                }
-                
-                console.log('Found navigation links:', navLinks.length);
-                
-                navLinks.forEach(function(link, index) {
-                    const href = link.getAttribute('href') || '';
-                    const textElement = link.querySelector('span') || link;
-                    const currentText = textElement.textContent.trim().toLowerCase();
-                    
-                    console.log(`Link ${index}: href="${href}", text="${currentText}"`);
-                    
-                    // Match main page (app)
-                    if (href === '/' || href.includes('app') || currentText === 'app' || index === 0) {
-                        textElement.textContent = 'H2H';
-                        console.log('Changed to H2H');
-                    }
-                    // Match seed reveal page
-                    else if (href.includes('seed') || currentText.includes('seed') || currentText.includes('reveal')) {
-                        textElement.textContent = 'Seed Reveal';
-                        console.log('Changed to Seed Reveal');
-                    }
-                });
-            }
-            
-            // Run multiple times with different delays
-            function runCustomization() {
-                setTimeout(customizeNavigation, 100);
-                setTimeout(customizeNavigation, 500);
-                setTimeout(customizeNavigation, 1000);
-                setTimeout(customizeNavigation, 2000);
-            }
-            
-            // Enhanced observer
-            function setupNavigationObserver() {
-                const observer = new MutationObserver(function(mutations) {
-                    customizeNavigation();
-                });
-                
-                observer.observe(document.body, {
-                    childList: true,
-                    subtree: true,
-                    attributes: true
-                });
-            }
-            
-            // Initial setup with multiple triggers
-            runCustomization();
-            document.addEventListener('DOMContentLoaded', runCustomization);
-            window.addEventListener('load', runCustomization);
-            setupNavigationObserver();
-            
-            // Also run periodically for the first 10 seconds
-            let attempts = 0;
-            const interval = setInterval(function() {
-                customizeNavigation();
-                attempts++;
-                if (attempts > 20) {  // Stop after 20 attempts (10 seconds)
-                    clearInterval(interval);
-                }
-            }, 500);
-        </script>
     """, unsafe_allow_html=True)
 
 def show_header(title):
