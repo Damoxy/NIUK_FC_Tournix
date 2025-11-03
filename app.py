@@ -16,10 +16,17 @@ SEASON_URLS = get_season_urls()
 all_fixtures, all_tables = [], {}
 with st.spinner("Loading data..."):
     for season, url in SEASON_URLS.items():
-        all_fixtures.extend(load_fixtures_by_url(url, season))
+        season_fixtures = load_fixtures_by_url(url, season)
+        # Normalize player names in fixtures to lowercase
+        for f in season_fixtures:
+            f["home"] = f["home"].lower().strip()
+            f["away"] = f["away"].lower().strip()
+        all_fixtures.extend(season_fixtures)
         all_tables[season] = load_table_by_url(url, season)
 
-players = sorted(set(f["home"] for f in all_fixtures) | set(f["away"] for f in all_fixtures))
+# Normalize player names to lowercase to avoid duplicates
+players_raw = set(f["home"] for f in all_fixtures) | set(f["away"] for f in all_fixtures)
+players = sorted({p.lower().strip() for p in players_raw})
 
 # --- SIDEBAR ---
 st.sidebar.title("⚙️")
