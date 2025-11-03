@@ -1,15 +1,15 @@
 # H2H FC Tournix - Football Head-to-Head Analysis App
 
-A Streamlit multipage application for analyzing football fixtures and league tables, with an integrated seed reveal system for knockout cup draws.
+A Streamlit multipage application for analyzing football fixtures and league tables, with an integrated seed reveal system for knockout cup draws and a fun AI-powered roast feature.
 
 ## Project Structure
 
 ```
 H2H_FC/
-├── app.py                 # Main Streamlit app (league analysis)
+├── H2H.py                 # Main Streamlit app (league analysis, roasting, welcome)
 ├── requirements.txt       # Python dependencies
 ├── .streamlit/
-│   └── secrets.toml      # Streamlit secrets (credentials, config)
+│   └── secrets.toml      # Streamlit secrets (credentials, config, roast prompt)
 ├── cache/                # Session-local cache files
 │   ├── fixtures_cache_*.pkl
 │   └── table_cache_*.csv
@@ -23,6 +23,7 @@ H2H_FC/
     ├── google_sheets.py  # Google Sheets integration
     ├── h2h.py            # Head-to-head results rendering
     ├── layout.py         # UI layout and styling components
+    ├── openrouter_utils.py # OpenRouter AI roast integration
     ├── players.py        # Player data and codes
     ├── seeds.py          # Seed management
     └── sheet.py          # Sheet operations
@@ -30,12 +31,15 @@ H2H_FC/
 
 ## Features
 
-### Main App (League Analysis)
+### Main App (League Analysis & Roasting)
 - Load fixtures and league tables from multiple seasons
 - Case-insensitive player name handling to avoid duplicates
 - Session-local caching for faster performance
 - Head-to-head statistics and match history
 - Combined league records across seasons
+- **AI-powered Roast a Player:**
+  - Select any player and generate a witty, banter-filled roast using OpenRouter AI
+  - Player names are never sent to the AI model—only stats are used, and the feature is purely for fun
 
 ### Seed Reveal Page
 - Interactive seed selection for knockout cup draws
@@ -50,11 +54,11 @@ H2H_FC/
    pip install -r requirements.txt
    ```
 
-2. Configure your Google Sheets credentials in `.streamlit/secrets.toml`
+2. Configure your Google Sheets credentials and OpenRouter API key in `secrets.toml`
 
 3. Run the app:
    ```bash
-   streamlit run app.py
+   streamlit run H2H.py
    ```
 
 ## Configuration
@@ -64,6 +68,7 @@ All configuration is managed through `.streamlit/secrets.toml`:
 - Google Cloud service account credentials
 - Player lists and access codes
 - External links
+- OpenRouter API key and roast prompt
 
 ## Caching
 
@@ -77,3 +82,4 @@ The app uses two levels of caching:
 - Imports use absolute paths from project root
 - Player names are normalized to lowercase for consistency
 - Cache files are temporary and cleared on app restart
+- The roast feature is for entertainment only—no player names are sent to the AI model
