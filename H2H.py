@@ -123,6 +123,21 @@ if not submit:
     </div>
     """, unsafe_allow_html=True)
     if st.button("Roast!"):
+        # Show loading placeholder immediately
+        loading_placeholder = st.empty()
+        loading_placeholder.markdown("""
+            <div style='text-align: center; padding: 20px; color: #666;'>
+                <div style='display: inline-block; width: 30px; height: 30px; border: 3px solid #f3f3f3; border-top: 3px solid #007bff; border-radius: 50%; animation: spin 1s linear infinite;'></div>
+                <p style='margin-top: 10px; font-style: italic;'>Generating roast... please wait!</p>
+            </div>
+            <style>
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            </style>
+        """, unsafe_allow_html=True)
+        
         # Gather stats for the selected player
         player_stats = []
         for season, df in all_tables.items():
@@ -137,18 +152,19 @@ if not submit:
                     player_stats.append(f"{season}: {', '.join(stats)}")
         # Format stats for prompt: more natural, no 'Stats:' prefix, no pipes, no quotes
         stats_summary = '\n'.join(player_stats) if player_stats else "No stats found."
-        with st.spinner("Contacting OpenRouter for a roast..."):
-            roast = roast_player_with_openrouter(anon_placeholder, stats_summary)
+        
+        # Generate roast
+        roast = roast_player_with_openrouter(anon_placeholder, stats_summary)
+        
+        # Clear loading indicator
+        loading_placeholder.empty()
+        
         # Replace placeholder with actual player name in the response
         roast = roast.replace(anon_placeholder, player)
-        # Truncate to 3 paragraphs (split by double newlines or <br> tags)
-        import re
-        paras = re.split(r'(?:\n\s*\n|<br ?/?>)', roast)
-        roast_short = '\n\n'.join(paras[:3]).strip()
         # Show roast in a styled <div> that auto-expands to fit all content (no textarea, no copy button)
         st.markdown(f'''
             <div class="custom-roast-box" style="white-space:pre-wrap;word-break:break-word;">
-                {roast_short}
+                {roast}
             </div>
         ''', unsafe_allow_html=True)
 

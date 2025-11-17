@@ -2,9 +2,53 @@ import streamlit as st
 import requests
 import os
 
+def fetch_gist_content(gist_url):
+    # Convert gist page URL to API URL
+    gist_id = gist_url.rstrip('/').split('/')[-1]
+    api_url = f"https://api.github.com/gists/{gist_id}"
+    response = requests.get(api_url)
+    response.raise_for_status()
+    gist_files = response.json()["files"]
+    # Get the first file's content
+    file_content = next(iter(gist_files.values()))["content"]
+    return file_content
+
+
+def load_prompts_from_gist():
+    gist_url = st.secrets["github"]["gist_url"]
+    content = fetch_gist_content(gist_url)
+    # Parse markdown for system_message, user_template, ai_settings
+    system_message, user_template, ai_settings = [], [], {}
+    mode = None
+    for line in content.splitlines():
+        if line.strip().startswith('## System Message'):
+            mode = 'system'
+        elif line.strip().startswith('## User Template'):
+            mode = 'user'
+        elif line.strip().startswith('## AI Settings'):
+            mode = 'ai'
+        elif line.strip().startswith('```'):
+            continue
+        elif mode == 'system':
+            if line.strip():
+                system_message.append(line.rstrip())
+        elif mode == 'user':
+            if line.strip():
+                user_template.append(line.rstrip())
+        elif mode == 'ai':
+            if ':' in line:
+                k, v = line.split(':', 1)
+                ai_settings[k.strip('- ').strip()] = v.strip()
+    return {
+        "system_message": '\n'.join(system_message),
+        "user_template": '\n'.join(user_template),
+        "ai_settings": ai_settings
+    }
+
+
 def roast_player_with_openrouter(player_name, player_stats, api_key=None):
     """
-    Calls OpenRouter's deepseek/deepseek-chat-v3-0324:free model to roast a player based on their stats.
+    Calls OpenRouter's AI model to roast a player based on their stats.
     Args:
         player_name (str): The player's name (can be a placeholder for anonymity).
         player_stats (str): A string summary of the player's stats.
@@ -20,33 +64,28 @@ def roast_player_with_openrouter(player_name, player_stats, api_key=None):
     if not api_key:
         return "[OpenRouter API key not set]"
 
-    # Get prompt from secrets, fallback to default if not set
-    try:
-        prompt_template = st.secrets["openrouter"]["roast_prompt"]
-    except Exception:
-        prompt_template = (
-            "A group of friends play the FC game on PS5 across different seasons, competing against each other. I need you to create witty, funny roasts for each player based on their in-game stats and performance. The tone should mix Nigerian and UK slang — playful banter, not mean-spirited.\n\nYou can also throw in jokes about:\n- Players relying on 'machineries' (unfair tactics or overpowered teams) to win.\n- Stirring drama or 'wahala' in the WhatsApp group.\n- Rage-quitting or leaving the group mid-season.\n\nKeep the roasts sharp, humorous, and full of football banter.\n\nStats context (do NOT repeat these directly, use them for inspiration only):\n{stats}"
-        )
-    prompt = prompt_template.format(stats=player_stats)
-
+    prompts_config = load_prompts_from_gist()
+    ai_settings = prompts_config["ai_settings"]
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
     data = {
-        "model": "google/gemma-3-4b-it",
+        "model": ai_settings["model"],
         "messages": [
-            {"role": "system", "content": "You are a witty football pundit. Never repeat stats directly. Always roast with banter, using the numbers only as inspiration. Always mention the player's name ('this player') at least once in the roast."},
-            {"role": "user", "content": prompt}
+            {"role": "system", "content": prompts_config["system_message"]},
+            {"role": "user", "content": prompts_config["user_template"].format(stats=player_stats)}
         ],
-        "max_tokens": 300,
-        "temperature": 0.9
+        "max_tokens": int(ai_settings["max_tokens"]),
+        "temperature": float(ai_settings["temperature"])
     }
     try:
         response = requests.post(url, headers=headers, json=data, timeout=30)
         response.raise_for_status()
         result = response.json()
-        return result["choices"][0]["message"]["content"]
+        roast_content = result["choices"][0]["message"]["content"]
+        roast_content = roast_content.replace('@', '')
+        return roast_content
     except Exception as e:
         return f"[Error contacting OpenRouter: {e}]"
