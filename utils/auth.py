@@ -11,4 +11,4 @@ def init_client():
         ["https://spreadsheets.google.com/feeds",
          "https://www.googleapis.com/auth/drive"]
     )
-    return gspread.authorize(creds)
+    return gspread.authorize(creds) # Initialize and return gspread client
