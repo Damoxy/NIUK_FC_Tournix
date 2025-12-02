@@ -32,21 +32,9 @@ taken_seeds = set(assignments.values())
 available_players = [p for p in all_players if p not in assignments]
 
 # --- 3. Title ---
-st.title("🏆 S4 Knockout Cup Draws")
+st.title("🏆 S5 Knockout Cup Draws")
 
-# --- 4. Current Seed Status with Locked icons ---
-st.subheader("Current Seed Status")
-
-cols = st.columns(8)
-for idx, seed in enumerate(st.session_state.shuffled_seeds):
-    col = cols[idx % 8]
-    with col:
-        if seed in taken_seeds:
-            col.button(seed, key=f"readonly_{seed}", disabled=True)
-        else:
-            col.button("🔒", key=f"locked_{seed}", disabled=True)
-
-# --- 5. Authentication ---
+# --- 4. Authentication (Always shown first) ---
 st.subheader("🔐 Enter to Choose Your Tile")
 
 selected_player = st.selectbox("👤 Select your name:", [""] + available_players)
@@ -63,7 +51,7 @@ if st.button("✅ Submit"):
         st.session_state.verified_player = selected_player
         st.rerun()
 
-# --- 6. Tile selection after verification ---
+# --- 5. Show seed selection only after authentication ---
 if "verified_player" in st.session_state:
     player = st.session_state.verified_player
 
@@ -71,6 +59,9 @@ if "verified_player" in st.session_state:
         st.success(f"You have been seeded to **{assignments[player]}**, you can view the draws [here]({link_url}).")
     else:
         st.success(f"Welcome {player}! Please select your seed:")
+        
+        # --- Seed Selection ---
+        st.subheader("Pick Your Seed")
         cols = st.columns(8)
 
         for idx, seed in enumerate(st.session_state.shuffled_seeds):
