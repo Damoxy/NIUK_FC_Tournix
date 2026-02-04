@@ -122,11 +122,13 @@ def render_combined_league_record(tables_filtered, players):
                         totals["GA"]+=int(ga.strip())
                     except: pass
         totals["GD"] = totals["GF"] - totals["GA"]
+        win_percentage = round((totals['W'] / totals['MP']) * 100, 1) if totals['MP'] > 0 else 0
         with col:
             st.markdown(f"""
                 <div class="card">
                     <h3>{player}</h3>
                     Matches: {totals['MP']}<br>
+                    <span style="font-size: 20px; font-weight: 700;">Win %: {win_percentage}%</span><br>
                     Wins: {totals['W']} | Draws: {totals['D']} | Losses: {totals['L']}<br>
                     GF: {totals['GF']} | GA: {totals['GA']} | GD: {totals['GD']}<br>
                     Points: {totals['Points']}
