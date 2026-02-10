@@ -1,5 +1,7 @@
 import streamlit as st
 import pandas as pd
+import plotly.graph_objects as go
+import plotly.express as px
 from utils.config import get_app_title, get_season_urls
 from utils.data_utils import load_fixtures_by_url, load_table_by_url
 from utils.layout import set_page_config, inject_css, show_header
@@ -267,6 +269,17 @@ def get_player_stats(player, tables, fixtures):
         'worst_season': {'season': '', 'position': 0, 'points': 0}
     }
     
+    # Find the latest season number to exclude current season from best season calculation
+    season_numbers = []
+    for season in tables.keys():
+        try:
+            season_num = int(season.replace('S', ''))
+            season_numbers.append(season_num)
+        except:
+            pass
+    
+    latest_season_num = max(season_numbers) if season_numbers else 0
+    
     # Season-by-season stats
     for season, df in tables.items():
         if df.empty or "Twitter Handles" not in df.columns:
@@ -318,8 +331,16 @@ def get_player_stats(player, tables, fixtures):
             # Get position
             if "Position" in row.columns:
                 try:
-                    position = int(str(row["Position"].values[0]).strip())
-                    season_data["Position"] = position
+                    position_val = row["Position"].values[0]
+                    if pd.notna(position_val):
+                        # Handle both float and string positions
+                        if isinstance(position_val, (int, float)):
+                            position = int(position_val)
+                        else:
+                            position = int(float(str(position_val).strip()))
+                        season_data["Position"] = position
+                    else:
+                        season_data["Position"] = 999
                 except:
                     season_data["Position"] = 999
             else:
@@ -327,8 +348,12 @@ def get_player_stats(player, tables, fixtures):
             
             stats['seasons'][season] = season_data
             
-            # Check for best/worst season
-            if season_data["Position"] < stats['best_season']['position']:
+            # Check for best/worst season - exclude current season from best season calculation
+            current_season_num = int(season.replace('S', ''))
+            
+            # Only consider seasons before the latest one for "best season"
+            if (current_season_num < latest_season_num and 
+                season_data["Position"] < stats['best_season']['position']):
                 stats['best_season'] = {
                     'season': season,
                     'position': season_data["Position"],
@@ -336,6 +361,7 @@ def get_player_stats(player, tables, fixtures):
                     'division': get_player_division(player, df, season)
                 }
             
+            # Include all seasons for worst season calculation
             if season_data["Position"] > stats['worst_season']['position']:
                 stats['worst_season'] = {
                     'season': season,
@@ -517,7 +543,6 @@ if selected_player:
                 'Points': data['Points']
             })
         
-        import pandas as pd
         df_display = pd.DataFrame(seasons_data)
         st.dataframe(df_display, use_container_width=True)
     
@@ -627,6 +652,60 @@ if selected_player:
                     <div style="font-size: 1rem; font-weight: 600;">{compare_player.title()} Wins</div>
                 </div>
                 """, unsafe_allow_html=True)
+            
+            # Display match history with H2H page styling
+            match_lines = []
+            for season, rnd, home, away, hs, as_ in matches:
+                hs_text = str(hs) if hs is not None else "-"
+                as_text = str(as_) if as_ is not None else "-"
+
+                # Default draw style
+                score_style = "color:#424242;"  
+                home_name, away_name = home.title(), away.title()
+
+                if hs is not None and as_ is not None:
+                    if hs > as_:
+                        score_style = "color:#1b5e20;"  # green
+                        home_name = f"<b>{home.title()}</b>"
+                    elif hs < as_:
+                        score_style = "color:#1b5e20;"  # green
+                        away_name = f"<b>{away.title()}</b>"
+                    else:
+                        score_style = "color:#424242;"  # gray
+
+                # Get division info
+                division_label = ""
+                for f in all_fixtures:
+                    if (f['season'] == season and f['home'] == home and f['away'] == away and 
+                        (f['home_leg1'] == hs or f['home_leg2'] == hs)):
+                        if f['division'] == 'Div1_Fixtures':
+                            division_label = "Division 1"
+                        elif f['division'] == 'Div2_Fixtures':
+                            division_label = "Division 2"
+                        elif f['division'] == 'Cup':
+                            division_label = "Cup"
+                        break
+
+                # Compose match label
+                if rnd:
+                    match_label = f"{season} {division_label} {rnd} :"
+                else:
+                    match_label = f"{season} {division_label} :"
+                match_label = match_label.replace('  ', ' ').strip()
+
+                match_lines.append(
+                    f"{match_label} {home_name} "
+                    f"<span style='{score_style}'>{hs_text}-{as_text}</span> {away_name}"
+                )
+
+            match_text = "<br>".join(match_lines)
+
+            st.markdown(f"""
+            <div class="card" style="background:#f1f5f9; text-align:center; margin-top: 1rem;">
+                <b style="font-size:24px; color:#000000;">Head-to-Head Matches</b><br><br>
+                <span style="font-size:18px; color:#000000;">{match_text}</span>
+            </div>
+            """, unsafe_allow_html=True)
         else:
             st.markdown("""
             <div style="background: rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 16px; border: 2px solid rgba(255,255,255,0.2); text-align: center;">
