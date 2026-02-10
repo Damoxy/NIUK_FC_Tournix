@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 from utils.config import get_app_title, get_season_urls
 from utils.data_utils import load_fixtures_by_url, load_table_by_url
 from utils.layout import set_page_config, inject_css, show_header
@@ -191,6 +192,70 @@ with st.spinner("Loading data..."):
 players_raw = set(f["home"] for f in all_fixtures) | set(f["away"] for f in all_fixtures)
 players = sorted({p for p in players_raw if p})
 
+def get_player_division(player, df, season):
+    """Determine which division a player is in based on table structure"""
+    if df.empty or "Twitter Handles" not in df.columns:
+        return "Unknown"
+    
+    # Extract season number for comparison (e.g., "S5", "S6", "S7")
+    season_num = season.replace('S', '')
+    
+    # Divisions only started from Season 5 onwards
+    if int(season_num) < 5:
+        return "Division 1"  # Pre-division era, consider all as single division
+    
+    # Convert to list to iterate through rows more easily
+    df_rows = df.to_dict('records')
+    div2_section_started = False
+    
+    for i, row in enumerate(df_rows):
+        # Check if we've hit the DIV 2 section by looking across all columns for the marker
+        row_text = ' '.join([str(val) for val in row.values() if pd.notna(val) and val != ''])
+        
+        # Look for Division 2 markers - make it more flexible for different seasons
+        div2_markers = [
+            'DIV 2', '(DIV 2)', 'DIVISION 2',
+            f'SEASON {season_num} (DIV 2)',  # Season-specific marker
+            f'S{season_num} (DIV 2)',       # Alternative format
+            'FC26 SEASON',                   # Part of the header structure
+        ]
+        
+        # Check if this row contains any DIV 2 marker
+        if any(marker in row_text.upper() for marker in [m.upper() for m in div2_markers]):
+            # Additional check: make sure it's actually a division header, not just a player name
+            if 'SEASON' in row_text.upper() and 'DIV 2' in row_text.upper():
+                div2_section_started = True
+                continue
+        
+        # Check if this row contains our player
+        twitter_handle = row.get('Twitter Handles', '')
+        if pd.notna(twitter_handle) and str(twitter_handle).lower().strip() == player.lower().strip():
+            if div2_section_started:
+                return "Division 2"
+            else:
+                return "Division 1"
+    
+    # Fallback: if we can't find division markers, use position-based logic
+    # This is for seasons where the division structure might be different
+    df_clean = df.dropna(subset=['Twitter Handles'])
+    df_clean = df_clean[df_clean['Twitter Handles'].str.contains('@', na=False)]
+    
+    player_row = df_clean[df_clean['Twitter Handles'].str.lower().str.strip() == player.lower().strip()]
+    if not player_row.empty and 'Position' in player_row.columns:
+        try:
+            position = int(player_row['Position'].iloc[0])
+            # For seasons 5+ with divisions, use position-based fallback
+            # Typically positions 1-16 are Div 1, 17+ are Div 2
+            # But this can vary by season, so this is just a fallback
+            if position <= 16:
+                return "Division 1"
+            else:
+                return "Division 2"
+        except:
+            pass
+    
+    return "Unknown"
+
 def get_player_stats(player, tables, fixtures):
     """Get comprehensive player statistics across all seasons"""
     stats = {
@@ -198,7 +263,7 @@ def get_player_stats(player, tables, fixtures):
         'career_totals': {"MP":0,"W":0,"D":0,"L":0,"GF":0,"GA":0,"GD":0,"Points":0},
         'highest_win': {'score': '0-0', 'opponent': '', 'season': ''},
         'highest_defeat': {'score': '0-0', 'opponent': '', 'season': ''},
-        'best_season': {'season': '', 'position': 999, 'points': 0},
+        'best_season': {'season': '', 'position': 999, 'points': 0, 'division': ''},
         'worst_season': {'season': '', 'position': 0, 'points': 0}
     }
     
@@ -267,7 +332,8 @@ def get_player_stats(player, tables, fixtures):
                 stats['best_season'] = {
                     'season': season,
                     'position': season_data["Position"],
-                    'points': season_data["Points"]
+                    'points': season_data["Points"],
+                    'division': get_player_division(player, df, season)
                 }
             
             if season_data["Position"] > stats['worst_season']['position']:
@@ -388,6 +454,7 @@ if selected_player:
         <div class="card" style="background: linear-gradient(145deg, #d4edda 0%, #c3e6cb 100%); border: 2px solid #28a745; box-shadow: 0 8px 32px rgba(40, 167, 69, 0.2);">
             <h4 style="color: #155724; margin-bottom: 1rem; font-size: 1.3rem;">🥇 Best Season</h4>
             <div style="font-size: 1.4rem; font-weight: bold; color: #155724; margin-bottom: 0.5rem;">{player_stats['best_season']['season']}</div>
+            <div style="color: #155724; margin-bottom: 0.3rem; font-size: 1.1rem;">Division: {player_stats['best_season']['division']}</div>
             <div style="color: #155724; margin-bottom: 0.3rem; font-size: 1.1rem;">Position: {player_stats['best_season']['position']}</div>
             <div style="color: #155724; font-size: 1.1rem;">Points: {player_stats['best_season']['points']}</div>
         </div>
@@ -492,9 +559,9 @@ if selected_player:
                     <div><strong style="color: #000000;">GD:</strong> <span style="color: #000000;">{career1['GD']:+d}</span></div>
                 </div>
                 <div style="border-top: 2px solid #e9ecef; padding-top: 1rem;">
-                    <div style="margin-bottom: 0.5rem;"><strong style="color: #667eea;">Best Season:</strong> <span style="color: #000000;">{player_stats['best_season']['season']} (Pos: {player_stats['best_season']['position']})</span></div>
-                    <div style="margin-bottom: 0.5rem;"><strong style="color: #667eea;">Biggest Win:</strong> <span style="color: #000000;">{player_stats['highest_win']['score'] if player_stats['highest_win']['score'] != '0-0' else 'None'}</span></div>
-                    <div><strong style="color: #667eea;">Biggest Loss:</strong> <span style="color: #000000;">{player_stats['highest_defeat']['score'] if player_stats['highest_defeat']['score'] != '0-0' else 'None'}</span></div>
+                    <div style="margin-bottom: 0.5rem;"><strong style="color: #667eea;">Best Season:</strong> <span style="color: #000000;">{player_stats['best_season']['season']} ({player_stats['best_season']['division']} - Pos: {player_stats['best_season']['position']})</span></div>
+                    <div style="margin-bottom: 0.5rem;"><strong style="color: #667eea;">Biggest Win:</strong> <span style="color: #000000;">{player_stats['highest_win']['score'] if player_stats['highest_win']['score'] != '0-0' else 'None'}{f" vs {player_stats['highest_win']['opponent'].title()}" if player_stats['highest_win']['score'] != '0-0' and player_stats['highest_win']['opponent'] else ''}</span></div>
+                    <div><strong style="color: #667eea;">Biggest Loss:</strong> <span style="color: #000000;">{player_stats['highest_defeat']['score'] if player_stats['highest_defeat']['score'] != '0-0' else 'None'}{f" vs {player_stats['highest_defeat']['opponent'].title()}" if player_stats['highest_defeat']['score'] != '0-0' and player_stats['highest_defeat']['opponent'] else ''}</span></div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -526,9 +593,9 @@ if selected_player:
                     <div><strong style="color: #000000;">GD:</strong> <span style="color: #000000;">{career2['GD']:+d}</span></div>
                 </div>
                 <div style="border-top: 2px solid #e9ecef; padding-top: 1rem;">
-                    <div style="margin-bottom: 0.5rem;"><strong style="color: #764ba2;">Best Season:</strong> <span style="color: #000000;">{compare_stats['best_season']['season']} (Pos: {compare_stats['best_season']['position']})</span></div>
-                    <div style="margin-bottom: 0.5rem;"><strong style="color: #764ba2;">Biggest Win:</strong> <span style="color: #000000;">{compare_stats['highest_win']['score'] if compare_stats['highest_win']['score'] != '0-0' else 'None'}</span></div>
-                    <div><strong style="color: #764ba2;">Biggest Loss:</strong> <span style="color: #000000;">{compare_stats['highest_defeat']['score'] if compare_stats['highest_defeat']['score'] != '0-0' else 'None'}</span></div>
+                    <div style="margin-bottom: 0.5rem;"><strong style="color: #764ba2;">Best Season:</strong> <span style="color: #000000;">{compare_stats['best_season']['season']} ({compare_stats['best_season']['division']} - Pos: {compare_stats['best_season']['position']})</span></div>
+                    <div style="margin-bottom: 0.5rem;"><strong style="color: #764ba2;">Biggest Win:</strong> <span style="color: #000000;">{compare_stats['highest_win']['score'] if compare_stats['highest_win']['score'] != '0-0' else 'None'}{f" vs {compare_stats['highest_win']['opponent'].title()}" if compare_stats['highest_win']['score'] != '0-0' and compare_stats['highest_win']['opponent'] else ''}</span></div>
+                    <div><strong style="color: #764ba2;">Biggest Loss:</strong> <span style="color: #000000;">{compare_stats['highest_defeat']['score'] if compare_stats['highest_defeat']['score'] != '0-0' else 'None'}{f" vs {compare_stats['highest_defeat']['opponent'].title()}" if compare_stats['highest_defeat']['score'] != '0-0' and compare_stats['highest_defeat']['opponent'] else ''}</span></div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
