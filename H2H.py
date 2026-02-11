@@ -1,6 +1,6 @@
 import streamlit as st
 from utils.config import get_app_title, get_season_urls
-from utils.data_utils import load_fixtures_by_url, load_table_by_url
+from utils.data_utils import load_fixtures_by_url, load_table_by_url, get_h2h
 from utils.layout import set_page_config, inject_css, show_header, render_combined_league_record
 from utils.h2h import render_h2h
 
@@ -34,8 +34,8 @@ max_seasons = len(SEASON_URLS)
 season_limit = st.sidebar.slider("Include last N seasons", 1, max_seasons, max_seasons)
 
 with st.sidebar.form("player_form"):
-    player1 = st.selectbox("Select Player 1", players, index=0, key="player1_select")
-    player2 = st.selectbox("Select Player 2", players, index=1, key="player2_select")
+    player1 = st.selectbox("Player 1", players, index=0, key="player1_select")
+    player2 = st.selectbox("Player 2", players, index=1, key="player2_select")
     submit = st.form_submit_button("Submit")
 
 selected_seasons = sorted(list(SEASON_URLS.keys()))[-season_limit:]
@@ -169,5 +169,218 @@ if not submit:
         ''', unsafe_allow_html=True)
 
 if submit:
-    render_h2h(fixtures_filtered, player1, player2)
-    render_combined_league_record(tables_filtered, [player1, player2])
+    # Prepare data for enhanced player profile UI
+    submit_fixtures = [f for f in all_fixtures if f["season"] in selected_seasons]
+    submit_tables = {s: all_tables[s] for s in selected_seasons}
+    
+    # Show enhanced player comparison instead of old H2H
+    st.markdown("""
+    <style>
+        /* Modern dark theme with better contrast */
+        .stApp {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            min-height: 100vh;
+        }
+        
+        /* Enhanced card styling with modern look */
+        .card {
+            background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%) !important;
+            border: none !important;
+            border-radius: 16px !important;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1) !important;
+            padding: 1.5rem !important;
+            margin-bottom: 1rem !important;
+            color: #2c3e50 !important;
+            transition: transform 0.3s ease, box-shadow 0.3s ease !important;
+        }
+        
+        .card:hover {
+            transform: translateY(-4px) !important;
+            box-shadow: 0 12px 48px rgba(0,0,0,0.15) !important;
+        }
+        
+        .card h3, .card h4 {
+            color: #2c3e50 !important;
+            font-weight: 700 !important;
+            margin-bottom: 1rem !important;
+        }
+        
+        /* Enhanced metric containers */
+        .metric-container {
+            background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: none;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        
+        .metric-container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(0,0,0,0.15);
+        }
+        
+        .metric-container div {
+            color: #2c3e50 !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    st.markdown(f"<h4 style='text-align:center; color:#ffffff; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); font-size: 1.5rem; margin-bottom: 2rem;'>{player1.title()} vs {player2.title()}</h4>", unsafe_allow_html=True)
+    
+    # Get player stats
+    from utils.h2h import get_player_stats
+    player1_stats = get_player_stats(player1, submit_tables, submit_fixtures)
+    player2_stats = get_player_stats(player2, submit_tables, submit_fixtures)
+    
+    col1, col2 = st.columns(2)
+    
+    # Player 1 stats card
+    with col1:
+        career1 = player1_stats['career_totals']
+        win_rate1 = round((career1['W'] / career1['MP']) * 100, 1) if career1['MP'] > 0 else 0
+        win_color1 = "#28a745" if win_rate1 >= 50 else "#ffc107" if win_rate1 >= 30 else "#dc3545"
+        st.markdown(f"""
+        <div class="card" style="background: linear-gradient(145deg, #ffffff 0%, #f1f3f4 100%); border-left: 5px solid #667eea;">
+            <h3 style="color: #667eea; margin-bottom: 1.5rem; font-size: 1.4rem;">{player1.title()}</h3>
+            <div style="background: {win_color1}; color: white; padding: 0.8rem; border-radius: 8px; text-align: center; margin-bottom: 1rem;">
+                <div style="font-size: 1.8rem; font-weight: bold;">{win_rate1}%</div>
+                <div style="font-size: 0.9rem;">Win Percentage</div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.8rem; margin-bottom: 1rem; text-align: center;">
+                <div><strong style="color: #28a745; font-size: 1.1rem;">W:</strong> <span style="color: #000000; font-size: 1.3rem;">{career1['W']}</span></div>
+                <div><strong style="color: #ffc107; font-size: 1.1rem;">D:</strong> <span style="color: #000000; font-size: 1.3rem;">{career1['D']}</span></div>
+                <div><strong style="color: #dc3545; font-size: 1.1rem;">L:</strong> <span style="color: #000000; font-size: 1.3rem;">{career1['L']}</span></div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.8rem; margin-bottom: 1.5rem; text-align: center;">
+                <div><strong style="color: #000000; font-size: 1.1rem;">GF:</strong> <span style="color: #000000; font-size: 1.3rem;">{career1['GF']}</span></div>
+                <div><strong style="color: #000000; font-size: 1.1rem;">GA:</strong> <span style="color: #000000; font-size: 1.3rem;">{career1['GA']}</span></div>
+                <div><strong style="color: #000000; font-size: 1.1rem;">GD:</strong> <span style="color: #000000; font-size: 1.3rem;">{career1['GD']:+d}</span></div>
+            </div>
+            <div style="text-align: center; margin-bottom: 1rem;"><strong style="color: #667eea; font-size: 0.9rem;">Seasons Played:</strong> <span style="color: #000000; font-size: 1rem;">{len(player1_stats['seasons'])}</span></div>
+            <div style="border-top: 2px solid #e9ecef; padding-top: 1rem;">
+                <div style="margin-bottom: 0.5rem;"><strong style="color: #667eea;">Best Season:</strong> <span style="color: #000000;">{player1_stats['best_season']['season']} ({player1_stats['best_season']['division']} - Pos: {player1_stats['best_season']['position']})</span></div>
+                <div style="margin-bottom: 0.5rem;"><strong style="color: #667eea;">Biggest Win:</strong> <span style="color: #000000;">{player1_stats['highest_win']['score'] if player1_stats['highest_win']['score'] != '0-0' else 'None'}{f" vs {player1_stats['highest_win']['opponent'].title()}" if player1_stats['highest_win']['score'] != '0-0' and player1_stats['highest_win']['opponent'] else ''}</span></div>
+                <div><strong style="color: #667eea;">Biggest Loss:</strong> <span style="color: #000000;">{player1_stats['highest_defeat']['score'] if player1_stats['highest_defeat']['score'] != '0-0' else 'None'}{f" vs {player1_stats['highest_defeat']['opponent'].title()}" if player1_stats['highest_defeat']['score'] != '0-0' and player1_stats['highest_defeat']['opponent'] else ''}</span></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Player 2 stats card
+    with col2:
+        career2 = player2_stats['career_totals']
+        win_rate2 = round((career2['W'] / career2['MP']) * 100, 1) if career2['MP'] > 0 else 0
+        win_color2 = "#28a745" if win_rate2 >= 50 else "#ffc107" if win_rate2 >= 30 else "#dc3545"
+        st.markdown(f"""
+        <div class="card" style="background: linear-gradient(145deg, #ffffff 0%, #f1f3f4 100%); border-left: 5px solid #764ba2;">
+            <h3 style="color: #764ba2; margin-bottom: 1.5rem; font-size: 1.4rem;">{player2.title()}</h3>
+            <div style="background: {win_color2}; color: white; padding: 0.8rem; border-radius: 8px; text-align: center; margin-bottom: 1rem;">
+                <div style="font-size: 1.8rem; font-weight: bold;">{win_rate2}%</div>
+                <div style="font-size: 0.9rem;">Win Percentage</div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.8rem; margin-bottom: 1rem; text-align: center;">
+                <div><strong style="color: #28a745; font-size: 1.1rem;">W:</strong> <span style="color: #000000; font-size: 1.3rem;">{career2['W']}</span></div>
+                <div><strong style="color: #ffc107; font-size: 1.1rem;">D:</strong> <span style="color: #000000; font-size: 1.3rem;">{career2['D']}</span></div>
+                <div><strong style="color: #dc3545; font-size: 1.1rem;">L:</strong> <span style="color: #000000; font-size: 1.3rem;">{career2['L']}</span></div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.8rem; margin-bottom: 1.5rem; text-align: center;">
+                <div><strong style="color: #000000; font-size: 1.1rem;">GF:</strong> <span style="color: #000000; font-size: 1.3rem;">{career2['GF']}</span></div>
+                <div><strong style="color: #000000; font-size: 1.1rem;">GA:</strong> <span style="color: #000000; font-size: 1.3rem;">{career2['GA']}</span></div>
+                <div><strong style="color: #000000; font-size: 1.1rem;">GD:</strong> <span style="color: #000000; font-size: 1.3rem;">{career2['GD']:+d}</span></div>
+            </div>
+            <div style="text-align: center; margin-bottom: 1rem;"><strong style="color: #764ba2; font-size: 0.9rem;">Seasons Played:</strong> <span style="color: #000000; font-size: 1rem;">{len(player2_stats['seasons'])}</span></div>
+            <div style="border-top: 2px solid #e9ecef; padding-top: 1rem;">
+                <div style="margin-bottom: 0.5rem;"><strong style="color: #764ba2;">Best Season:</strong> <span style="color: #000000;">{player2_stats['best_season']['season']} ({player2_stats['best_season']['division']} - Pos: {player2_stats['best_season']['position']})</span></div>
+                <div style="margin-bottom: 0.5rem;"><strong style="color: #764ba2;">Biggest Win:</strong> <span style="color: #000000;">{player2_stats['highest_win']['score'] if player2_stats['highest_win']['score'] != '0-0' else 'None'}{f" vs {player2_stats['highest_win']['opponent'].title()}" if player2_stats['highest_win']['score'] != '0-0' and player2_stats['highest_win']['opponent'] else ''}</span></div>
+                <div><strong style="color: #764ba2;">Biggest Loss:</strong> <span style="color: #000000;">{player2_stats['highest_defeat']['score'] if player2_stats['highest_defeat']['score'] != '0-0' else 'None'}{f" vs {player2_stats['highest_defeat']['opponent'].title()}" if player2_stats['highest_defeat']['score'] != '0-0' and player2_stats['highest_defeat']['opponent'] else ''}</span></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Direct Head-to-Head section
+    st.markdown("#### Direct Head-to-Head")
+    matches, w1, d, l1 = get_h2h(submit_fixtures, player1, player2)
+    
+    if matches:
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.markdown(f"""
+            <div class="metric-container" style="background: linear-gradient(145deg, #28a745 0%, #20c997 100%); color: white;">
+                <div style="font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;">{w1}</div>
+                <div style="font-size: 1rem; font-weight: 600;">{player1.title()} Wins</div>
+            </div>
+            """, unsafe_allow_html=True)
+        with col2:
+            st.markdown(f"""
+            <div class="metric-container" style="background: linear-gradient(145deg, #ffc107 0%, #ffdd57 100%); color: white;">
+                <div style="font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;">{d}</div>
+                <div style="font-size: 1rem; font-weight: 600;">Draws</div>
+            </div>
+            """, unsafe_allow_html=True)
+        with col3:
+            st.markdown(f"""
+            <div class="metric-container" style="background: linear-gradient(145deg, #dc3545 0%, #e74c3c 100%); color: white;">
+                <div style="font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;">{l1}</div>
+                <div style="font-size: 1rem; font-weight: 600;">{player2.title()} Wins</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # Display match history
+        match_lines = []
+        for season, rnd, home, away, hs, as_ in matches:
+            hs_text = str(hs) if hs is not None else "-"
+            as_text = str(as_) if as_ is not None else "-"
+
+            score_style = "color:#424242;"  
+            home_name, away_name = home.title(), away.title()
+
+            if hs is not None and as_ is not None:
+                if hs > as_:
+                    score_style = "color:#1b5e20;"
+                    home_name = f"<b>{home.title()}</b>"
+                elif hs < as_:
+                    score_style = "color:#1b5e20;"
+                    away_name = f"<b>{away.title()}</b>"
+                else:
+                    score_style = "color:#424242;"
+
+            division_label = ""
+            for f in submit_fixtures:
+                if (f['season'] == season and f['home'] == home and f['away'] == away and 
+                    (f['home_leg1'] == hs or f['home_leg2'] == hs)):
+                    if f['division'] == 'Div1_Fixtures':
+                        division_label = "Division 1"
+                    elif f['division'] == 'Div2_Fixtures':
+                        division_label = "Division 2"
+                    elif f['division'] == 'Cup':
+                        division_label = "Cup"
+                    break
+
+            if rnd:
+                match_label = f"{season} {division_label} {rnd} :"
+            else:
+                match_label = f"{season} {division_label} :"
+            match_label = match_label.replace('  ', ' ').strip()
+
+            match_lines.append(
+                f"{match_label} {home_name} "
+                f"<span style='{score_style}'>{hs_text}-{as_text}</span> {away_name}"
+            )
+
+        match_text = "<br>".join(match_lines)
+
+        st.markdown(f"""
+        <div class="card" style="background:#f1f5f9; text-align:center; margin-top: 1rem;">
+            <b style="font-size:24px; color:#000000;">Head-to-Head Matches</b><br><br>
+            <span style="font-size:18px; color:#000000;">{match_text}</span>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div style="background: rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 16px; border: 2px solid rgba(255,255,255,0.2); text-align: center;">
+            <div style="font-size: 1.2rem; color: #ffffff; font-weight: 500;">
+                🤝 These players have never faced each other directly.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
