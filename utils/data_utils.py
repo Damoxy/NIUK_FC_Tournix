@@ -213,15 +213,29 @@ def load_table_by_url(sheet_url, season):
             return pd.read_csv(cache_file)
     gc = get_gspread_client()
     sheet = gc.open_by_url(sheet_url)
-    try:
-        ws = sheet.worksheet(f"LEAGUE DASHBOARD-{season}")
-    except:
+    
+    # Try different worksheet naming patterns
+    worksheet_names = [
+        f"LEAGUE DASHBOARD-{season}",  # Standard format (S1, S3, S4, S5, S6)
+        "LEAGUE DASHBOARD"             # Season 2 format
+    ]
+    
+    ws = None
+    for name in worksheet_names:
+        try:
+            ws = sheet.worksheet(name)
+            break
+        except:
+            continue
+    
+    if ws is None:
         return pd.DataFrame()
     data = ws.get_all_values()
     df = pd.DataFrame(data)
     header_row = None
     for i, row in df.iterrows():
-        if "Twitter Handles" in row.values:
+        # Check for both "Twitter Handles" (standard) and "Names" (Season 2)
+        if "Twitter Handles" in row.values or "Names" in row.values:
             header_row = i
             break
     if header_row is None:
@@ -230,13 +244,30 @@ def load_table_by_url(sheet_url, season):
     df = df[header_row + 1:]
     df = df.loc[:, ~df.columns.duplicated()]
     df = df.reset_index(drop=True)
+    
+    # Normalize column name: rename "Names" to "Twitter Handles" for consistency
+    if "Names" in df.columns and "Twitter Handles" not in df.columns:
+        df = df.rename(columns={"Names": "Twitter Handles"})
+    
     df.to_csv(cache_file, index=False)
     return df
 
 def load_table(sheet, season):
-    try:
-        ws = sheet.worksheet(f"LEAGUE DASHBOARD-{season}")
-    except:
+    # Try different worksheet naming patterns
+    worksheet_names = [
+        f"LEAGUE DASHBOARD-{season}",  # Standard format (S1, S3, S4, S5, S6)
+        "LEAGUE DASHBOARD"             # Season 2 format
+    ]
+    
+    ws = None
+    for name in worksheet_names:
+        try:
+            ws = sheet.worksheet(name)
+            break
+        except:
+            continue
+    
+    if ws is None:
         return pd.DataFrame()
 
     data = ws.get_all_values()

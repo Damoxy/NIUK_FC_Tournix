@@ -8,16 +8,19 @@ def inject_css():
         <style>
             .stApp { background-color: #ffffff; }
             .card {
-                background-color: #f9f9f9;
+                background-color: #ffffff;
                 padding: 20px;
                 border-radius: 16px;
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
                 text-align: center;
                 font-size: 18px;
                 font-weight: 600;
-                color: #333333;
+                color: #000000;
+                border: 1px solid #e9ecef;
             }
-            .card h3 { margin: 0; font-size: 24px; color: #007bff; }
+            .card h3 { margin: 0; font-size: 24px; color: #000000; font-weight: 700; }
+            .card span { color: #000000; }
+            .card * { color: #000000; }
             /* Custom sidebar navigation styling */
             .stSidebar .css-1d391kg {
                 background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
