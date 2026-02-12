@@ -384,7 +384,7 @@ if submit:
     
     # Regular lines for Division 1 and 2
     main_chart = alt.Chart(non_dp_data).mark_line(point=True, size=2, opacity=0.8).encode(
-        x=alt.X('Season:N', sort=all_seasons, title='Season', axis=alt.Axis(labelAngle=0)),
+        x=alt.X('Season:N', sort=all_seasons, title='Season', axis=alt.Axis(labelAngle=0, labelPadding=10)),
         y=alt.Y('Position:Q',
                 scale=alt.Scale(domain=[-scale_range, scale_range], zero=True),
                 axis=alt.Axis(
@@ -392,7 +392,7 @@ if submit:
                     labelAngle=0
                 ), 
                 title=None),
-        color=alt.Color('Player:N', scale=alt.Scale(scheme='category10')),
+        color=alt.Color('Player:N', scale=alt.Scale(scheme='category10'), legend=alt.Legend(orient='right', titleFontSize=12, labelFontSize=11)),
         tooltip=['Player:N', 'Season:N', 'DisplayLabel:N', 'Division:N']
     )
     
@@ -404,11 +404,15 @@ if submit:
         color='#FFFFFF'
     ).encode(y='y:Q')
     
-    # Combine all charts
+    # Combine all charts with proper sizing
+    # Calculate width based on number of seasons to prevent cutoff
+    num_seasons = len(all_seasons)
+    chart_width = max(800, num_seasons * 120)  # At least 120px per season
+    
     chart = (main_chart + dp_reference).properties(
         title=alt.TitleParams(text='Seasonal Performance Comparison', anchor='middle', align='center'),
         height=500,
-        width='container'
+        width=chart_width
     ).interactive()
 
     st.altair_chart(chart, use_container_width=True)
