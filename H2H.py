@@ -3,6 +3,8 @@ from utils.config import get_app_title, get_season_urls
 from utils.data_utils import load_fixtures_by_url, load_table_by_url, get_h2h
 from utils.layout import set_page_config, inject_css, show_header, render_combined_league_record
 from utils.h2h import render_h2h
+import pandas as pd
+import altair as alt
 
 set_page_config()
 inject_css()
@@ -256,7 +258,7 @@ if submit:
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.8rem; margin-bottom: 1.5rem; text-align: center;">
                 <div><strong style="color: #000000; font-size: 1.1rem;">GF:</strong> <span style="color: #000000; font-size: 1.3rem;">{career1['GF']}</span></div>
                 <div><strong style="color: #000000; font-size: 1.1rem;">GA:</strong> <span style="color: #000000; font-size: 1.3rem;">{career1['GA']}</span></div>
-                <div><strong style="color: #000000; font-size: 1.1rem;">GD:</strong> <span style="color: #000000; font-size: 1.3rem;">{career1['GD']:+d}</span></div>
+                <div><strong style="color: #000000; font-size: 1.1rem;">GD:</strong> <span style="color: #000000; font-size: 1.3rem;">{int(career1['GD']):+d}</span></div>
             </div>
             <div style="text-align: center; margin-bottom: 1rem;"><strong style="color: #667eea; font-size: 0.9rem;">Seasons Played:</strong> <span style="color: #000000; font-size: 1rem;">{len(player1_stats['seasons'])}</span></div>
             <div style="border-top: 2px solid #e9ecef; padding-top: 1rem;">
@@ -287,7 +289,7 @@ if submit:
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.8rem; margin-bottom: 1.5rem; text-align: center;">
                 <div><strong style="color: #000000; font-size: 1.1rem;">GF:</strong> <span style="color: #000000; font-size: 1.3rem;">{career2['GF']}</span></div>
                 <div><strong style="color: #000000; font-size: 1.1rem;">GA:</strong> <span style="color: #000000; font-size: 1.3rem;">{career2['GA']}</span></div>
-                <div><strong style="color: #000000; font-size: 1.1rem;">GD:</strong> <span style="color: #000000; font-size: 1.3rem;">{career2['GD']:+d}</span></div>
+                <div><strong style="color: #000000; font-size: 1.1rem;">GD:</strong> <span style="color: #000000; font-size: 1.3rem;">{int(career2['GD']):+d}</span></div>
             </div>
             <div style="text-align: center; margin-bottom: 1rem;"><strong style="color: #764ba2; font-size: 0.9rem;">Seasons Played:</strong> <span style="color: #000000; font-size: 1rem;">{len(player2_stats['seasons'])}</span></div>
             <div style="border-top: 2px solid #e9ecef; padding-top: 1rem;">
@@ -297,7 +299,120 @@ if submit:
             </div>
         </div>
         """, unsafe_allow_html=True)
+
+    # Create a DataFrame for the line chart
+    all_seasons = sorted(list(SEASON_URLS.keys()))
+    chart_data = []
+
+    for season in all_seasons:
+        # Player 1
+        p1_perf = player1_stats['seasonal_performance'].get(season)
+        if p1_perf:
+            pos = p1_perf['position']
+            # Division 1: Invert position (1→45, 5→41, 45→1) so UP = better
+            # Division 2: Keep position as negative so UP from N/A is also better (-1, -5, -30)
+            if p1_perf['division'] == 'Division 1':
+                pos = 46 - pos  # Invert: position 1 becomes 45, position 45 becomes 1
+            else:  # Division 2
+                pos = -pos  # Make negative
+            chart_data.append({
+                'Season': season, 
+                'Player': player1.title(), 
+                'Position': pos, 
+                'Division': p1_perf['division'],
+                'DisplayLabel': f"DIV 1: {p1_perf['position']}" if p1_perf['division'] == 'Division 1' else f"DIV 2: {p1_perf['position']}"
+            })
+        else:
+            chart_data.append({
+                'Season': season, 
+                'Player': player1.title(), 
+                'Position': 0, 
+                'Division': 'DP',
+                'DisplayLabel': 'DP (Didn\'t Participate)'
+            })
+
+        # Player 2
+        p2_perf = player2_stats['seasonal_performance'].get(season)
+        if p2_perf:
+            pos = p2_perf['position']
+            # Division 1: Invert position so UP = better
+            # Division 2: Keep position as negative
+            if p2_perf['division'] == 'Division 1':
+                pos = 46 - pos  # Invert: position 1 becomes 45, position 45 becomes 1
+            else:  # Division 2
+                pos = -pos  # Make negative
+            chart_data.append({
+                'Season': season, 
+                'Player': player2.title(), 
+                'Position': pos, 
+                'Division': p2_perf['division'],
+                'DisplayLabel': f"DIV 1: {p2_perf['position']}" if p2_perf['division'] == 'Division 1' else f"DIV 2: {p2_perf['position']}"
+            })
+        else:
+            chart_data.append({
+                'Season': season, 
+                'Player': player2.title(), 
+                'Position': 0, 
+                'Division': 'DP',
+                'DisplayLabel': 'DP (Didn\'t Participate)'
+            })
+
+    df_chart = pd.DataFrame(chart_data)
+
+    # Calculate dynamic scale based on actual data range
+    if not df_chart.empty:
+        # Get the max absolute value from the data (excluding N/A which is 0)
+        # This includes both inverted Div 1 positions (1-30) and negative Div 2 positions (-1 to -30)
+        positions = df_chart[df_chart['Position'] != 0]['Position'].values
+        if len(positions) > 0:
+            max_pos = max(abs(positions))
+            # Round up to nearest multiple of 5 for cleaner scale
+            scale_range = max(int((max_pos * 1.1 + 4) / 5) * 5, 10)
+        else:
+            scale_range = 30
+    else:
+        scale_range = 30
+
+    # Create the Altair chart with dual-scale visualization
+    # INVERTED LOGIC (so UP always = better performance):
+    # Division 1: Position 1 (best) → 45 (chart height), drops show decline
+    # Division 2: Position 1 (best) → -1 (chart), drops show decline  
+    # DP: 0 in the middle (shown in red/orange with thicker line)
     
+    # Main line chart for non-DP data
+    non_dp_data = df_chart[df_chart['Position'] != 0]
+    
+    # Regular lines for Division 1 and 2
+    main_chart = alt.Chart(non_dp_data).mark_line(point=True, size=2, opacity=0.8).encode(
+        x=alt.X('Season:N', sort=all_seasons, title='Season', axis=alt.Axis(labelAngle=0)),
+        y=alt.Y('Position:Q',
+                scale=alt.Scale(domain=[-scale_range, scale_range], zero=True),
+                axis=alt.Axis(
+                    labelExpr="datum.value == 0 ? 'DP' : datum.value > 0 ? 'DIV 1: ' + (46 - datum.value) : 'DIV 2: ' + (-datum.value)",
+                    labelAngle=0
+                ), 
+                title=None),
+        color=alt.Color('Player:N', scale=alt.Scale(scheme='category10')),
+        tooltip=['Player:N', 'Season:N', 'DisplayLabel:N', 'Division:N']
+    )
+    
+    # Add white dotted reference line at y=0 (DP line) that spans entire chart
+    dp_reference = alt.Chart(pd.DataFrame({'y': [0]})).mark_rule(
+        strokeDash=[3, 3],
+        size=5,
+        opacity=0.8,
+        color='#FFFFFF'
+    ).encode(y='y:Q')
+    
+    # Combine all charts
+    chart = (main_chart + dp_reference).properties(
+        title=alt.TitleParams(text='Seasonal Performance Comparison', anchor='middle', align='center'),
+        height=450,
+        width=800
+    ).interactive()
+
+    st.altair_chart(chart, use_container_width=True)
+
     # Head-to-Head section
     st.markdown("#### Head-to-Head")
     matches, w1, d, l1 = get_h2h(submit_fixtures, player1, player2)
