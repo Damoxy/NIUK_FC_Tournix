@@ -51,7 +51,7 @@ if not submit:
         color: #222831 !important;
     }
     .stMarkdown p, .stMarkdown li {
-        color: #222831 !important;
+        color: #000000 !important;
         font-size: 1.18em !important;
     }
     .stMarkdown a {
@@ -178,7 +178,7 @@ if submit:
     <style>
         /* Modern dark theme with better contrast */
         .stApp {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            background: #ffffff !important;
             min-height: 100vh;
         }
         
@@ -200,7 +200,7 @@ if submit:
         }
         
         .card h3, .card h4 {
-            color: #2c3e50 !important;
+            color: #000000 !important;
             font-weight: 700 !important;
             margin-bottom: 1rem !important;
         }
@@ -227,7 +227,7 @@ if submit:
     </style>
     """, unsafe_allow_html=True)
     
-    st.markdown(f"<h4 style='text-align:center; color:#ffffff; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); font-size: 1.5rem; margin-bottom: 2rem;'>{player1.title()} vs {player2.title()}</h4>", unsafe_allow_html=True)
+    #st.markdown(f"<h4 style='text-align:center; color:#ffffff; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); font-size: 1.5rem; margin-bottom: 2rem;'>{player1.title()} vs {player2.title()}</h4>", unsafe_allow_html=True)
     
     # Get player stats
     from utils.h2h import get_player_stats
@@ -298,8 +298,8 @@ if submit:
         </div>
         """, unsafe_allow_html=True)
     
-    # Direct Head-to-Head section
-    st.markdown("#### Direct Head-to-Head")
+    # Head-to-Head section
+    st.markdown("#### Head-to-Head")
     matches, w1, d, l1 = get_h2h(submit_fixtures, player1, player2)
     
     if matches:

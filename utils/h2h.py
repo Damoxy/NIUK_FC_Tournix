@@ -350,7 +350,7 @@ def render_player_profile(all_fixtures, all_tables, players):
         <style>
             /* Modern dark theme with better contrast */
             .stApp {
-                background: linear-gradient(135deg, #4a4a4a 0%, #2d2d2d 100%) !important;
+                background: #3a3a3a !important;
                 min-height: 100vh;
             }
             
@@ -569,9 +569,9 @@ def render_player_profile(all_fixtures, all_tables, players):
         if compare_player:
             compare_stats = get_player_stats(compare_player, all_tables, all_fixtures)
             
-            st.markdown(f"<h4 style='text-align:center; color:#ffffff; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); font-size: 1.5rem; margin-bottom: 2rem;'>{selected_player.title()} vs {compare_player.title()}</h4>", unsafe_allow_html=True)
+            st.markdown(f"<h4 style='text-align:center; color:#050505; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); font-size: 1.5rem; margin-bottom: 2rem;'>{selected_player.title()} vs {compare_player.title()}</h4>", unsafe_allow_html=True)
             
-            col1, col2 = st.columns(2)
+            col1, col2, col3 = st.columns(3)
             
             # Enhanced Player 1 stats card
             with col1:
@@ -604,8 +604,43 @@ def render_player_profile(all_fixtures, all_tables, players):
                 </div>
                 """, unsafe_allow_html=True)
             
-            # Enhanced Player 2 stats card
+            # Enhanced Head-to-Head section in the middle
             with col2:
+                compare_stats = get_player_stats(compare_player, all_tables, all_fixtures)
+                matches, w1, d, l1 = get_h2h(all_fixtures, selected_player, compare_player)
+                
+                if matches:
+                    st.markdown(f"""
+                    <div class="card" style="background: linear-gradient(145deg, #ffffff 0%, #f1f3f4 100%); border-left: 5px solid #6c757d; height: 100%;">
+                        <h3 style="color: #6c757d; margin-bottom: 1.5rem; font-size: 1.4rem;">Head-to-Head</h3>
+                        <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem; text-align: center;">
+                            <div style="background: linear-gradient(145deg, #28a745 0%, #20c997 100%); color: white; padding: 0.8rem; border-radius: 8px;">
+                                <div style="font-size: 1.8rem; font-weight: bold;">{w1}</div>
+                                <div style="font-size: 0.9rem;">{selected_player.title()} Wins</div>
+                            </div>
+                            <div style="background: linear-gradient(145deg, #ffc107 0%, #ffdd57 100%); color: white; padding: 0.8rem; border-radius: 8px;">
+                                <div style="font-size: 1.8rem; font-weight: bold;">{d}</div>
+                                <div style="font-size: 0.9rem;">Draws</div>
+                            </div>
+                            <div style="background: linear-gradient(145deg, #dc3545 0%, #e74c3c 100%); color: white; padding: 0.8rem; border-radius: 8px;">
+                                <div style="font-size: 1.8rem; font-weight: bold;">{l1}</div>
+                                <div style="font-size: 0.9rem;">{compare_player.title()} Wins</div>
+                            </div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.markdown("""
+                    <div class="card" style="background: linear-gradient(145deg, #ffffff 0%, #f1f3f4 100%); border-left: 5px solid #6c757d; height: 100%;">
+                        <h3 style="color: #6c757d; margin-bottom: 1.5rem; font-size: 1.4rem;">Head-to-Head</h3>
+                        <div style="text-align: center; color: #000000; font-weight: 500; padding: 2rem 1rem;">
+                            🤝 These players have never faced each other directly.
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+            
+            # Enhanced Player 2 stats card
+            with col3:
                 career2 = compare_stats['career_totals']
                 win_rate2 = round((career2['W'] / career2['MP']) * 100, 1) if career2['MP'] > 0 else 0
                 win_color2 = "#28a745" if win_rate2 >= 50 else "#ffc107" if win_rate2 >= 30 else "#dc3545"
@@ -635,35 +670,9 @@ def render_player_profile(all_fixtures, all_tables, players):
                 </div>
                 """, unsafe_allow_html=True)
             
-            # Enhanced Direct Head-to-Head section
-            st.markdown("#### Direct Head-to-Head")
-            matches, w1, d, l1 = get_h2h(all_fixtures, selected_player, compare_player)
-            
+            # Display full match history below
             if matches:
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    st.markdown(f"""
-                    <div class="metric-container" style="background: linear-gradient(145deg, #28a745 0%, #20c997 100%); color: white;">
-                        <div style="font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;">{w1}</div>
-                        <div style="font-size: 1rem; font-weight: 600;">{selected_player.title()} Wins</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                with col2:
-                    st.markdown(f"""
-                    <div class="metric-container" style="background: linear-gradient(145deg, #ffc107 0%, #ffdd57 100%); color: white;">
-                        <div style="font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;">{d}</div>
-                        <div style="font-size: 1rem; font-weight: 600;">Draws</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                with col3:
-                    st.markdown(f"""
-                    <div class="metric-container" style="background: linear-gradient(145deg, #dc3545 0%, #e74c3c 100%); color: white;">
-                        <div style="font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;">{l1}</div>
-                        <div style="font-size: 1rem; font-weight: 600;">{compare_player.title()} Wins</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                # Display match history with H2H page styling
+                st.markdown("#### Recent Matches")
                 match_lines = []
                 for season, rnd, home, away, hs, as_ in matches:
                     hs_text = str(hs) if hs is not None else "-"
@@ -711,17 +720,8 @@ def render_player_profile(all_fixtures, all_tables, players):
                 match_text = "<br>".join(match_lines)
 
                 st.markdown(f"""
-                <div class="card" style="background:#f1f5f9; text-align:center; margin-top: 1rem;">
-                    <b style="font-size:24px; color:#000000;">Head-to-Head Matches</b><br><br>
+                <div class="card" style="background:#f1f5f9; text-align:center;">
                     <span style="font-size:18px; color:#000000;">{match_text}</span>
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                st.markdown("""
-                <div style="background: rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 16px; border: 2px solid rgba(255,255,255,0.2); text-align: center;">
-                    <div style="font-size: 1.2rem; color: #ffffff; font-weight: 500;">
-                        🤝 These players have never faced each other directly.
-                    </div>
                 </div>
                 """, unsafe_allow_html=True)
     
