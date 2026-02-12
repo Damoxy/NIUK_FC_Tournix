@@ -90,14 +90,30 @@ def get_player_stats(player, tables, fixtures):
             if not player_row.empty:
                 player_stats['seasons'].append(season)
                 
+                # Extract GF and GA from '+ / -' column if it exists
+                gf, ga = 0, 0
+                if '+ / -' in player_row.columns:
+                    goals_str = player_row['+ / -'].values[0]
+                    if isinstance(goals_str, str) and '/' in goals_str:
+                        try:
+                            gf_str, ga_str = goals_str.split('/')
+                            gf = int(gf_str.strip())
+                            ga = int(ga_str.strip())
+                        except (ValueError, IndexError):
+                            gf, ga = 0, 0
+                
                 # Update career totals
-                for col in ['MP', 'W', 'D', 'L', 'GF', 'GA', 'GD', 'Points']:
+                for col in ['MP', 'W', 'D', 'L', 'GD', 'Points']:
                     if col in player_row:
                         value = player_row[col].values[0]
                         # Ensure value is numeric, defaulting to 0 if not
                         numeric_value = pd.to_numeric(value, errors='coerce')
                         if pd.notna(numeric_value):
                             player_stats['career_totals'][col] += numeric_value
+                
+                # Add GF and GA
+                player_stats['career_totals']['GF'] += gf
+                player_stats['career_totals']['GA'] += ga
 
                 # Update best season
                 division = get_player_division(player, table, season)

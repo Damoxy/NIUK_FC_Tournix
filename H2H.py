@@ -251,13 +251,13 @@ if submit:
                 <div style="font-size: 0.9rem;">Win Percentage</div>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.8rem; margin-bottom: 1rem; text-align: center;">
-                <div><strong style="color: #28a745; font-size: 1.1rem;">W:</strong> <span style="color: #000000; font-size: 1.3rem;">{career1['W']}</span></div>
-                <div><strong style="color: #ffc107; font-size: 1.1rem;">D:</strong> <span style="color: #000000; font-size: 1.3rem;">{career1['D']}</span></div>
-                <div><strong style="color: #dc3545; font-size: 1.1rem;">L:</strong> <span style="color: #000000; font-size: 1.3rem;">{career1['L']}</span></div>
+                <div><strong style="color: #28a745; font-size: 1.1rem;">W:</strong> <span style="color: #000000; font-size: 1.3rem;">{int(career1['W'])}</span></div>
+                <div><strong style="color: #ffc107; font-size: 1.1rem;">D:</strong> <span style="color: #000000; font-size: 1.3rem;">{int(career1['D'])}</span></div>
+                <div><strong style="color: #dc3545; font-size: 1.1rem;">L:</strong> <span style="color: #000000; font-size: 1.3rem;">{int(career1['L'])}</span></div>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.8rem; margin-bottom: 1.5rem; text-align: center;">
-                <div><strong style="color: #000000; font-size: 1.1rem;">GF:</strong> <span style="color: #000000; font-size: 1.3rem;">{career1['GF']}</span></div>
-                <div><strong style="color: #000000; font-size: 1.1rem;">GA:</strong> <span style="color: #000000; font-size: 1.3rem;">{career1['GA']}</span></div>
+                <div><strong style="color: #000000; font-size: 1.1rem;">GF:</strong> <span style="color: #000000; font-size: 1.3rem;">{int(career1['GF'])}</span></div>
+                <div><strong style="color: #000000; font-size: 1.1rem;">GA:</strong> <span style="color: #000000; font-size: 1.3rem;">{int(career1['GA'])}</span></div>
                 <div><strong style="color: #000000; font-size: 1.1rem;">GD:</strong> <span style="color: #000000; font-size: 1.3rem;">{int(career1['GD']):+d}</span></div>
             </div>
             <div style="text-align: center; margin-bottom: 1rem;"><strong style="color: #667eea; font-size: 0.9rem;">Seasons Played:</strong> <span style="color: #000000; font-size: 1rem;">{len(player1_stats['seasons'])}</span></div>
@@ -282,13 +282,13 @@ if submit:
                 <div style="font-size: 0.9rem;">Win Percentage</div>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.8rem; margin-bottom: 1rem; text-align: center;">
-                <div><strong style="color: #28a745; font-size: 1.1rem;">W:</strong> <span style="color: #000000; font-size: 1.3rem;">{career2['W']}</span></div>
-                <div><strong style="color: #ffc107; font-size: 1.1rem;">D:</strong> <span style="color: #000000; font-size: 1.3rem;">{career2['D']}</span></div>
-                <div><strong style="color: #dc3545; font-size: 1.1rem;">L:</strong> <span style="color: #000000; font-size: 1.3rem;">{career2['L']}</span></div>
+                <div><strong style="color: #28a745; font-size: 1.1rem;">W:</strong> <span style="color: #000000; font-size: 1.3rem;">{int(career2['W'])}</span></div>
+                <div><strong style="color: #ffc107; font-size: 1.1rem;">D:</strong> <span style="color: #000000; font-size: 1.3rem;">{int(career2['D'])}</span></div>
+                <div><strong style="color: #dc3545; font-size: 1.1rem;">L:</strong> <span style="color: #000000; font-size: 1.3rem;">{int(career2['L'])}</span></div>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.8rem; margin-bottom: 1.5rem; text-align: center;">
-                <div><strong style="color: #000000; font-size: 1.1rem;">GF:</strong> <span style="color: #000000; font-size: 1.3rem;">{career2['GF']}</span></div>
-                <div><strong style="color: #000000; font-size: 1.1rem;">GA:</strong> <span style="color: #000000; font-size: 1.3rem;">{career2['GA']}</span></div>
+                <div><strong style="color: #000000; font-size: 1.1rem;">GF:</strong> <span style="color: #000000; font-size: 1.3rem;">{int(career2['GF'])}</span></div>
+                <div><strong style="color: #000000; font-size: 1.1rem;">GA:</strong> <span style="color: #000000; font-size: 1.3rem;">{int(career2['GA'])}</span></div>
                 <div><strong style="color: #000000; font-size: 1.1rem;">GD:</strong> <span style="color: #000000; font-size: 1.3rem;">{int(career2['GD']):+d}</span></div>
             </div>
             <div style="text-align: center; margin-bottom: 1rem;"><strong style="color: #764ba2; font-size: 0.9rem;">Seasons Played:</strong> <span style="color: #000000; font-size: 1rem;">{len(player2_stats['seasons'])}</span></div>
