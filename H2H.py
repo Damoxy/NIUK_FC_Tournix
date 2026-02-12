@@ -407,8 +407,8 @@ if submit:
     # Combine all charts
     chart = (main_chart + dp_reference).properties(
         title=alt.TitleParams(text='Seasonal Performance Comparison', anchor='middle', align='center'),
-        height=450,
-        width=800
+        height=500,
+        width='container'
     ).interactive()
 
     st.altair_chart(chart, use_container_width=True)
