@@ -70,166 +70,120 @@ def get_player_division(player, df, season):
 
 def get_player_stats(player, tables, fixtures):
     """Get comprehensive player statistics across all seasons"""
-    stats = {
-        'seasons': {},
-        'career_totals': {"MP":0,"W":0,"D":0,"L":0,"GF":0,"GA":0,"GD":0,"Points":0},
-        'highest_win': {'score': '0-0', 'opponent': '', 'season': ''},
-        'highest_defeat': {'score': '0-0', 'opponent': '', 'season': ''},
-        'best_season': {'season': '', 'position': 999, 'points': 0, 'division': ''},
-        'worst_season': {'season': '', 'position': 0, 'points': 0}
+    player_stats = {
+        'seasons': [],
+        'career_totals': {
+            'MP': 0, 'W': 0, 'D': 0, 'L': 0, 'GF': 0, 'GA': 0, 'GD': 0, 'Points': 0
+        },
+        'best_season': {'season': 'N/A', 'division': 'N/A', 'position': float('inf')},
+        'highest_win': {'score': '0-0', 'opponent': None},
+        'highest_defeat': {'score': '0-0', 'opponent': None},
+        'seasonal_performance': {}
     }
-    
-    # Find the latest season number to exclude current season from best season calculation
-    season_numbers = []
-    for season in tables.keys():
-        try:
-            season_num = int(season.replace('S', ''))
-            season_numbers.append(season_num)
-        except:
-            pass
-    
-    latest_season_num = max(season_numbers) if season_numbers else 0
-    
-    # Season-by-season stats
-    for season, df in tables.items():
-        if df.empty or "Twitter Handles" not in df.columns:
-            continue
-        
-        df.columns = [str(c).strip() for c in df.columns]
-        df["Twitter Handles"] = df["Twitter Handles"].astype(str).str.strip()
-        row = df[df["Twitter Handles"] == player]
-        
-        if not row.empty:
-            season_data = {}
-            
-            # Get basic stats
-            for k in ["MP","W","D","L","Points"]:
-                if k in row:
-                    try: 
-                        val = int(float(str(row[k].values[0]).replace(",","").strip()) or 0)
-                        season_data[k] = val
-                        stats['career_totals'][k] += val
-                    except: 
-                        season_data[k] = 0
-            
-            # Get goals
-            if "GF" in row.columns and "GA" in row.columns:
-                try:
-                    gf = int(str(row["GF"].values[0]).replace(",","").strip())
-                    ga = int(str(row["GA"].values[0]).replace(",","").strip())
-                    season_data["GF"] = gf
-                    season_data["GA"] = ga
-                    stats['career_totals']["GF"] += gf
-                    stats['career_totals']["GA"] += ga
-                except: 
-                    season_data["GF"] = 0
-                    season_data["GA"] = 0
-            elif "+ / -" in row.columns:
-                try:
-                    gf, ga = str(row["+ / -"].values[0]).strip().split("/")
-                    gf, ga = int(gf.strip()), int(ga.strip())
-                    season_data["GF"] = gf
-                    season_data["GA"] = ga
-                    stats['career_totals']["GF"] += gf
-                    stats['career_totals']["GA"] += ga
-                except: 
-                    season_data["GF"] = 0
-                    season_data["GA"] = 0
-            
-            season_data["GD"] = season_data["GF"] - season_data["GA"]
-            
-            # Get position
-            if "Position" in row.columns:
-                try:
-                    position_val = row["Position"].values[0]
-                    if pd.notna(position_val):
-                        # Handle both float and string positions
-                        if isinstance(position_val, (int, float)):
-                            position = int(position_val)
-                        else:
-                            position = int(float(str(position_val).strip()))
-                        season_data["Position"] = position
+
+    all_seasons = sorted(tables.keys())
+
+    for season in all_seasons:
+        table = tables.get(season)
+        if table is not None and not table.empty and "Twitter Handles" in table.columns:
+            player_row = table[table["Twitter Handles"].str.lower().str.strip() == player.lower().strip()]
+            if not player_row.empty:
+                player_stats['seasons'].append(season)
+                
+                # Update career totals
+                for col in ['MP', 'W', 'D', 'L', 'GF', 'GA', 'GD', 'Points']:
+                    if col in player_row:
+                        value = player_row[col].values[0]
+                        # Ensure value is numeric, defaulting to 0 if not
+                        numeric_value = pd.to_numeric(value, errors='coerce')
+                        if pd.notna(numeric_value):
+                            player_stats['career_totals'][col] += numeric_value
+
+                # Update best season
+                division = get_player_division(player, table, season)
+                
+                # Correctly calculate position within the division
+                if 'Position' in player_row.columns:
+                    try:
+                        position = int(player_row['Position'].iloc[0])
+                    except (ValueError, TypeError):
+                        position = player_row.index[0] + 1 # Fallback to index
+                else:
+                    position = player_row.index[0] + 1 # Fallback to index
+
+                if division == 'Division 1' and position < player_stats['best_season']['position']:
+                    player_stats['best_season'] = {
+                        'season': season,
+                        'division': division,
+                        'position': position
+                    }
+                elif division == 'Division 2':
+                    # For division 2, a lower position number is better.
+                    # We need to handle the logic for what a "best season" in Div 2 means.
+                    # Assuming for now any Div 1 season is better than any Div 2.
+                    # If no best season is set, or the current best is also Div 2 and worse position.
+                    if player_stats['best_season']['division'] != 'Division 1':
+                         if position < player_stats['best_season']['position']:
+                            player_stats['best_season'] = {
+                                'season': season,
+                                'division': division,
+                                'position': position
+                            }
+
+                # Store seasonal performance for the chart
+                player_stats['seasonal_performance'][season] = {
+                    'position': position,
+                    'division': division
+                }
+
+    # Find highest win and defeat from fixtures
+    player_fixtures = [f for f in fixtures if player.lower() in (f['home'].lower(), f['away'].lower())]
+    for fixture in player_fixtures:
+        for leg_home, leg_away in [(fixture["home_leg1"], fixture["away_leg1"]), 
+                                   (fixture["home_leg2"], fixture["away_leg2"])]:
+            if leg_home is not None and leg_away is not None:
+                if fixture["home"].lower() == player.lower():  # Player is home
+                    goal_diff = leg_home - leg_away
+                    opponent = fixture["away"]
+                    score = f"{leg_home}-{leg_away}"
+                else:  # Player is away
+                    goal_diff = leg_away - leg_home
+                    opponent = fixture["home"]
+                    score = f"{leg_away}-{leg_home}"
+                
+                # Check for highest win
+                if goal_diff > 0:
+                    current_highest = player_stats['highest_win']['score']
+                    if current_highest == '0-0':
+                        current_diff = 0
                     else:
-                        season_data["Position"] = 999
-                except:
-                    season_data["Position"] = 999
-            else:
-                season_data["Position"] = 999
-            
-            stats['seasons'][season] = season_data
-            
-            # Check for best/worst season - exclude current season from best season calculation
-            current_season_num = int(season.replace('S', ''))
-            
-            # Only consider seasons before the latest one for "best season"
-            if (current_season_num < latest_season_num and 
-                season_data["Position"] < stats['best_season']['position']):
-                stats['best_season'] = {
-                    'season': season,
-                    'position': season_data["Position"],
-                    'points': season_data["Points"],
-                    'division': get_player_division(player, df, season)
-                }
-            
-            # Include all seasons for worst season calculation
-            if season_data["Position"] > stats['worst_season']['position']:
-                stats['worst_season'] = {
-                    'season': season,
-                    'position': season_data["Position"],
-                    'points': season_data["Points"]
-                }
-    
-    # Calculate career GD
-    stats['career_totals']["GD"] = stats['career_totals']["GF"] - stats['career_totals']["GA"]
-    
-    # Find highest win/defeat from fixtures
-    for fixture in fixtures:
-        if fixture["home"] == player or fixture["away"] == player:
-            for leg_home, leg_away in [(fixture["home_leg1"], fixture["away_leg1"]), 
-                                     (fixture["home_leg2"], fixture["away_leg2"])]:
-                if leg_home is not None and leg_away is not None:
-                    if fixture["home"] == player:  # Player is home
-                        goal_diff = leg_home - leg_away
-                        opponent = fixture["away"]
-                        score = f"{leg_home}-{leg_away}"
-                    else:  # Player is away
-                        goal_diff = leg_away - leg_home
-                        opponent = fixture["home"]
-                        score = f"{leg_away}-{leg_home}"
+                        h, a = map(int, current_highest.split('-'))
+                        current_diff = h - a
                     
-                    # Check for highest win
-                    if goal_diff > 0:
-                        current_highest = stats['highest_win']['score']
-                        if current_highest == '0-0':
-                            current_diff = 0
-                        else:
-                            h, a = map(int, current_highest.split('-'))
-                            current_diff = h - a
-                        
-                        if goal_diff > current_diff:
-                            stats['highest_win'] = {
-                                'score': score,
-                                'opponent': opponent,
-                                'season': fixture["season"]
-                            }
+                    if goal_diff > current_diff:
+                        player_stats['highest_win'] = {
+                            'score': score,
+                            'opponent': opponent,
+                            'season': fixture["season"]
+                        }
+                
+                # Check for highest defeat
+                elif goal_diff < 0:
+                    current_highest = player_stats['highest_defeat']['score']
+                    if current_highest == '0-0':
+                        current_diff = 0
+                    else:
+                        h, a = map(int, current_highest.split('-'))
+                        current_diff = abs(h - a)
                     
-                    # Check for highest defeat
-                    elif goal_diff < 0:
-                        current_highest = stats['highest_defeat']['score']
-                        if current_highest == '0-0':
-                            current_diff = 0
-                        else:
-                            h, a = map(int, current_highest.split('-'))
-                            current_diff = abs(h - a)
-                        
-                        if abs(goal_diff) > current_diff:
-                            stats['highest_defeat'] = {
-                                'score': score,
-                                'opponent': opponent,
-                                'season': fixture["season"]
-                            }
+                    if abs(goal_diff) > current_diff:
+                        player_stats['highest_defeat'] = {
+                            'score': score,
+                            'opponent': opponent,
+                            'season': fixture["season"]
+                        }
     
-    return stats
+    return player_stats
 
 
 def render_h2h(fixtures_filtered, player1, player2):
