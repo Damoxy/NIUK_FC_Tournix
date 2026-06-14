@@ -32,7 +32,7 @@ taken_seeds = set(assignments.values())
 available_players = [p for p in all_players if p not in assignments]
 
 # --- 3. Title ---
-st.title("🏆 S5 Knockout Cup Draws")
+st.title("🏆 S8 Knockout Cup Draws")
 
 # --- 4. Authentication (Always shown first) ---
 st.subheader("🔐 Enter to Choose Your Tile")
