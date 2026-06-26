@@ -1,5 +1,4 @@
 import random
-import string
 
 def get_shuffled_seeds():
     def excel_cols(n):
@@ -13,7 +12,7 @@ def get_shuffled_seeds():
             result.append(s)
         return result
 
-    cols = excel_cols(32)  # A → AF (A=1 ... AF=32)
+    cols = excel_cols(16)  # A through P
     seeds = [f"{col}{j}" for col in cols for j in (1, 2)]
     random.shuffle(seeds)
     return seeds
