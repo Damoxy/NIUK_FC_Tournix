@@ -1,7 +1,7 @@
 import random
 
 def get_shuffled_seeds():
-    seeds = [f"{chr(65 + i)}{j}" for i in range(4) for j in (1, 2)]
+    seeds = [f"{chr(65 + i)}{j}" for i in range(20) for j in (1, 2)]
     random.shuffle(seeds)
     return seeds
 
